@@ -26,7 +26,7 @@ Key decisions documented in `docs/design_notes.md`:
 - Internal transactions out of scope (ethereum.traces not queried)
 - MEV candidates flagged, not deleted (for Phase 4 sensitivity analysis)
 
-### Phase 2 -- Transaction Classification (NEXT)
+### Phase 2 -- Transaction Classification (COMPLETE)
 
 The raw labels (exchange_deposit, exchange_withdrawal, defi_interaction,
 wallet_to_wallet) are derived mechanically from address labels. The classifier
@@ -34,21 +34,22 @@ learns to generalise this to unlabelled (unknown->unknown) transactions using
 features like gas price, transaction size, sender history, time of day.
 
 - Output: each transaction gets a predicted category + probability score.
-- Why ML here: ~30-40% of whale transactions are unknown->unknown. Rule-based
-  labelling cannot handle these. The classifier extends coverage.
-- Key files to build: `src/features/feature_engineer.py`,
+- Key files: `src/features/feature_engineer.py`,
   `src/models/transaction_classifier.py`
 
-Pre-coding analysis completed (2026-05-26):
-- Labelling strategy: rule-based from from_category/to_category.
-  Exchange->exchange folded into exchange_deposit (to-side priority).
-- Features: log_usd_value, gas_price_gwei, log_gas_used, is_contract_call,
-  hour_of_day, day_of_week, eth_usd_price, sender_prior_tx_count.
-- Look-ahead risks identified: sender history must use only prior rows;
-  gas price normalisation must avoid full-dataset statistics; classifier
-  must be retrainable on temporal subsets for Phase 4 walk-forward.
+Results on real data (292,445 transactions, 2023-01-01 to 2024-12-31):
+- 76% of transactions are unknown->unknown (classifier is load-bearing).
+- Label coverage: 11.3% from-address labelled, 14.0% to-address labelled.
+- Category distribution: 222,229 wallet_to_wallet, 37,895 exchange_deposit,
+  29,336 exchange_withdrawal, 2,985 defi_interaction.
+- Classifier accuracy on time-based hold-out: 71%.
+  DeFi: perfect. Deposits: 85% precision / 54% recall.
+  Withdrawals: 63% precision / 89% recall.
+- Top features: sender_prior_tx_count (29%), log_gas_used (28%),
+  is_contract_call (19%).
+- Look-ahead safe: sender history uses cumcount (only prior rows).
 
-### Phase 3 -- Sentiment Pipeline
+### Phase 3 -- Sentiment Pipeline (NEXT)
 
 Reddit (r/CryptoCurrency, r/Bitcoin, r/Ethereum) and crypto news headlines
 (CryptoPanic) scored hourly using VADER sentiment. Aggregated to match the
@@ -96,8 +97,11 @@ coverage to unknown->unknown transactions.
 
 Update this section at the end of each working session.
 
-**Last session: 2026-05-26**
-- Phase 1 fully complete (48 tests passing).
-- Phase 2 pre-coding analysis done: labelling strategy, feature design,
-  look-ahead risks all documented above.
-- Next step: build rule-based labeller in `src/features/feature_engineer.py`.
+**Last session: 2026-06-05**
+- Phase 2 fully complete (94 total tests passing).
+- Real Dune data downloaded: 292,445 rows (2023-2024) saved to
+  data/raw/whale_txs_raw.csv and data/processed/whale_txs.csv.
+- Dune API credits exhausted. DO NOT run dune_client.py or
+  whale_fetcher.py -- all future work uses local CSV files only.
+- Classifier results on real data: 71% accuracy, 76% unlabelled.
+- Next step: Phase 3 -- sentiment pipeline (Reddit + CryptoPanic + VADER).
