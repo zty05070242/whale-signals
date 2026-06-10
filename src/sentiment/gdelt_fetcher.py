@@ -237,7 +237,16 @@ def _fetch_single_window(
             resp = requests.get(GDELT_API_URL, params=params, timeout=30)
 
             if resp.status_code == 200:
-                data = resp.json()
+                try:
+                    data = resp.json()
+                except ValueError:
+                    # GDELT occasionally returns 200 with plain-text rate-limit
+                    # messages instead of JSON. Treat it the same as a 429.
+                    print(f"    Non-JSON 200 for {day} {start_hour:02d}-{end_hour:02d}"
+                          f" (likely soft rate limit): {resp.text[:120]}")
+                    wait = REQUEST_DELAY_SECONDS * (attempt + 2)
+                    time.sleep(wait)
+                    continue
                 articles = data.get("articles", [])
                 if not articles:
                     return pd.DataFrame()
