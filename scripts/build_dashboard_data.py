@@ -143,6 +143,44 @@ def r2(x) -> float | None:
     return round(float(x), 2)
 
 
+def return_distribution(returns: pd.Series, direction: str) -> dict | None:
+    """Histogram + summary stats for a set of forward returns.
+
+    A "hit" is a move in the predicted direction ('down' = price fell, which is
+    the correct call after a deposit/sell signal). Returns None if too few
+    observations to plot. Bin edges are shared by hits and misses so the two
+    colours line up into one continuous distribution.
+    """
+    r = returns.dropna() * 100  # to percent
+    if len(r) <= 10:
+        return None
+    if direction == "down":
+        hits, misses = r[r < 0], r[r >= 0]
+    else:
+        hits, misses = r[r > 0], r[r <= 0]
+    lo, hi = float(np.floor(r.min())), float(np.ceil(r.max()))
+    edges = np.linspace(lo, hi, 61)  # 60 shared bins
+    hit_counts, _ = np.histogram(hits, bins=edges)
+    miss_counts, _ = np.histogram(misses, bins=edges)
+    return {
+        "n": int(len(r)),
+        "hit_rate": r2(len(hits) / len(r) * 100),
+        "miss_rate": r2(len(misses) / len(r) * 100),
+        "avg_hit": r2(hits.mean()) if len(hits) else None,
+        "avg_miss": r2(misses.mean()) if len(misses) else None,
+        "avg_all": r2(r.mean()),
+        "edges": [round(e, 3) for e in edges.tolist()],
+        "hit_counts": hit_counts.tolist(),
+        "miss_counts": miss_counts.tolist(),
+    }
+
+
+# Conditions offered in the Section 5 distribution explorer (deposits, sell
+# signal). "unconditional" first, then every sentiment regime.
+DIST_CONDITIONS = {"unconditional": lambda df: pd.Series(True, index=df.index),
+                   **CONDITIONS}
+
+
 # ---------------------------------------------------------------------------
 # Base rates (slider-independent: computed once from the full price universe)
 # ---------------------------------------------------------------------------
@@ -241,28 +279,13 @@ def build_for_threshold(whale: pd.DataFrame, base: dict, years: list[int]) -> di
         "withdrawal": sentiment(withdrawals, "up", "sentiment_up"),
     }
 
-    # Section 5: return distribution for deposits during extreme greed
-    greed_ret = (deposits[deposits["fng_value"] > 75]["fwd_24h"].dropna() * 100)
-    if len(greed_ret) > 10:
-        wins = greed_ret[greed_ret < 0]     # price fell = hit
-        losses = greed_ret[greed_ret >= 0]  # price rose = miss
-        lo, hi = float(np.floor(greed_ret.min())), float(np.ceil(greed_ret.max()))
-        edges = np.linspace(lo, hi, 61)     # 60 shared bins
-        hit_counts, _ = np.histogram(wins, bins=edges)
-        miss_counts, _ = np.histogram(losses, bins=edges)
-        block["return_dist"] = {
-            "n": int(len(greed_ret)),
-            "hit_rate": r2(len(wins) / len(greed_ret) * 100),
-            "miss_rate": r2(len(losses) / len(greed_ret) * 100),
-            "avg_hit": r2(wins.mean()) if len(wins) else None,
-            "avg_miss": r2(losses.mean()) if len(losses) else None,
-            "avg_all": r2(greed_ret.mean()),
-            "edges": [round(e, 3) for e in edges.tolist()],
-            "hit_counts": hit_counts.tolist(),
-            "miss_counts": miss_counts.tolist(),
-        }
-    else:
-        block["return_dist"] = None
+    # Section 5: 24h return distribution for deposits, under each regime, so the
+    # dashboard can offer a condition selector (deposits are a sell signal, so
+    # direction is always "down": a hit means price fell).
+    block["return_dist_by_condition"] = {
+        name: return_distribution(deposits[fn(deposits)]["fwd_24h"], "down")
+        for name, fn in DIST_CONDITIONS.items()
+    }
 
     return block
 
@@ -317,6 +340,7 @@ def main() -> None:
         "years": years,
         "horizon_labels": HORIZON_LABELS,
         "sens_thresholds": SENS_THRESHOLDS,
+        "dist_conditions": list(DIST_CONDITIONS.keys()),
         "threshold_sensitivity": build_threshold_sensitivity(whale, base),
         "by_threshold": {},
     }

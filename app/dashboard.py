@@ -369,9 +369,21 @@ st.caption(
 # Section 5: Return distribution
 # ---------------------------------------------------------------------------
 
-st.header("05 // Return distribution: deposits in extreme greed")
+st.header("05 // Return distribution of deposits, by regime")
+st.markdown(
+    f"<span style='color:{MUTED}'>Pick a market regime to see the 24h return "
+    "distribution after whale deposits. Unconditional deposits sit near a coin "
+    "flip; the leftward (bearish) skew only appears in certain regimes. This is "
+    "the signal being conditional, not universal.</span>",
+    unsafe_allow_html=True,
+)
 
-RD = B["return_dist"]
+# Condition selector. Default to extreme greed (the strongest case).
+cond_options = DATA["dist_conditions"]
+default_idx = cond_options.index("extreme greed") if "extreme greed" in cond_options else 0
+condition = st.selectbox("REGIME", cond_options, index=default_idx)
+
+RD = B["return_dist_by_condition"].get(condition)
 if RD:
     c1, c2, c3 = st.columns(3)
     c1.metric("Hit Rate (price fell)", f"{z(RD['hit_rate']):.1f}%")
@@ -397,13 +409,18 @@ if RD:
     ))
     fig_hist.add_vline(x=0, line_dash="dot", line_color=MUTED)
     fig_hist.update_layout(
-        title="24h RETURNS AFTER WHALE DEPOSITS IN EXTREME GREED",
+        title=f"24h RETURNS AFTER WHALE DEPOSITS // {condition.upper()}",
         xaxis_title="24h FORWARD RETURN (%)", yaxis_title="COUNT",
         barmode="overlay",
     )
     st.plotly_chart(style_fig(fig_hist), width='stretch')
+    st.caption(
+        "A hit = price fell within 24h (the correct call for a sell signal). "
+        "Avg Return (all) blends hits and misses: a small directional tilt nets "
+        "to a small average because up-moves and down-moves are similar in size."
+    )
 else:
-    st.info("Not enough deposits above this threshold during extreme greed to plot.")
+    st.info("Not enough deposits above this threshold in this regime to plot.")
 
 # ---------------------------------------------------------------------------
 # Section 6: Asymmetry
