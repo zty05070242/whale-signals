@@ -411,29 +411,17 @@ The deposit edge at 24h is small (+1.3%). At 1 month it is +4.8%. At 6 months, +
 
 ## Limitations
 
-1. **Deposit edge is modest at short horizons.** +1.3% to +3.9% edge at 24h is statistically significant but economically marginal after costs, slippage, and execution latency. The edge becomes more meaningful at weekly and monthly horizons.
+1. **Long-horizon observations overlap.** At 1-month and longer horizons, thousands of whale events are measuring the same price move. The binomial p-values overstate significance. The edge column (whale vs base rate) is more informative than raw hit rates or p-values at these horizons.
 
-2. **Withdrawal signal has fully decayed.** The strongest historical signal (withdrawals during negative funding) does not survive out-of-sample in 2025-2026. Any strategy based on this signal would have failed in live trading.
+2. **DeFi dilution is untested.** We hypothesise that withdrawal edge decayed because withdrawals increasingly represent non-directional DeFi activity. Testing would require tracing post-withdrawal activity on-chain (e.g. did the ETH go to a staking contract or a cold wallet?).
 
-3. **Long-horizon observations overlap.** At 1-month and longer horizons, thousands of whale events are measuring the same price move. The binomial p-values overstate significance. The edge column (whale vs base rate) is more informative than raw hit rates or p-values at these horizons.
+3. **Backtested, not live-tested.** If market participants begin following deposit signals, the edge would likely be arbitraged away (as happened with withdrawal signals).
 
-4. **DeFi dilution is untested.** We hypothesise that withdrawal edge decayed because withdrawals increasingly represent non-directional DeFi activity. Testing would require tracing post-withdrawal activity on-chain (e.g. did the ETH go to a staking contract or a cold wallet?).
+4. **On-chain latency.** Whale transactions are visible after block confirmation (~12 seconds), but monitoring, processing, and executing a response trade adds delay.
 
-5. **Backtested, not live-tested.** If market participants begin following deposit signals, the edge would likely be arbitraged away (as happened with withdrawal signals).
+5. **Fixed USD threshold ignores ETH price growth.** A $1M transaction was ~833 ETH in 2023 but only ~250 ETH in 2026. The $1M pool gets diluted with smaller actors over time. An ETH-denominated threshold or inflation-adjusted threshold would be more rigorous but harder to compare across years.
 
-6. **Asymmetric decay is unexplained.** We suggest whale-watching tools broadcasting buys more than sells as one possible reason deposit edge survived while withdrawal edge died. But we have no direct evidence. It could equally be DeFi dilution alone, or something else entirely.
-
-7. **On-chain latency.** Whale transactions are visible after block confirmation (~12 seconds), but monitoring, processing, and executing a response trade adds delay.
-
-8. **Survivorship bias in labels.** Unknown wallets may include unlabelled exchanges or institutions, diluting or distorting the signal. Label staleness increases for newer transactions.
-
-9. **Fixed USD threshold ignores ETH price growth.** A $1M transaction was ~833 ETH in 2023 but only ~250 ETH in 2026. The $1M pool gets diluted with smaller actors over time. An ETH-denominated threshold or inflation-adjusted threshold would be more rigorous but harder to compare across years.
-
-10. **Bull market bias in early data.** ETH trended strongly upward in 2023-2024, which inflated withdrawal hit rates (buying in a bull market often works regardless of information). Base rates are adjusted for this, but the adjustment may be imperfect.
-
-11. **No stop-loss or drawdown analysis.** Long-horizon results (1 month to 6 months) assume holding a position to maturity. In practice, a trade that is ultimately correct can experience severe drawdowns mid-holding period. Without stop-loss modelling, we ignored the possibility that a position that finishes +5% may have been -20% at some point, which most traders cannot tolerate.
-
-12. **News sentiment is sparse and weak.** 1.7 articles/hour average. Market-derived sentiment (FnG, funding rate) proved far more informative than news headlines.
+6. **No stop-loss or drawdown analysis.** Long-horizon results (1 month to 6 months) assume holding a position to maturity. In practice, a trade that is ultimately correct can experience severe drawdowns mid-holding period. Without stop-loss modelling, we ignored the possibility that a position that finishes +5% may have been -20% at some point, which most traders cannot tolerate.
 
 ---
 
