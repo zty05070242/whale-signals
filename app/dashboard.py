@@ -87,13 +87,18 @@ def z(v) -> float:
 # ---------------------------------------------------------------------------
 
 @st.cache_data
-def load_data() -> dict:
-    """Load the pre-computed aggregate artefact."""
+def load_data(cache_key: float) -> dict:
+    """Load the pre-computed aggregate artefact.
+
+    `cache_key` is the data file's modification time. Passing it (unhashed args
+    would be prefixed with '_') means the cache invalidates whenever the file
+    changes, so a redeploy with new data never serves a stale cached dict.
+    """
     with open(DATA_PATH) as f:
         return json.load(f)
 
 
-DATA = load_data()
+DATA = load_data(DATA_PATH.stat().st_mtime)
 META = DATA["meta"]
 YEARS = DATA["years"]
 HORIZON_LABELS = DATA["horizon_labels"]
@@ -379,11 +384,13 @@ st.markdown(
 )
 
 # Condition selector. Default to extreme greed (the strongest case).
-cond_options = DATA["dist_conditions"]
+# Fall back to the per-block keys if the top-level list is absent (older data).
+cond_options = DATA.get("dist_conditions") or list(
+    B.get("return_dist_by_condition", {}).keys())
 default_idx = cond_options.index("extreme greed") if "extreme greed" in cond_options else 0
 condition = st.selectbox("REGIME", cond_options, index=default_idx)
 
-RD = B["return_dist_by_condition"].get(condition)
+RD = B.get("return_dist_by_condition", {}).get(condition)
 if RD:
     c1, c2, c3 = st.columns(3)
     c1.metric("Hit Rate (price fell)", f"{z(RD['hit_rate']):.1f}%")
