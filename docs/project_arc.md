@@ -83,23 +83,41 @@ The core analysis. Walk-forward event study with threshold sensitivity.
    at 24h: +3.9% edge in 2026 (out-of-sample). During extreme greed, $10M+
    deposits hit 78.3% (+12.5% edge). Edge scales with transaction size.
 
-2. **Withdrawal edge has decayed.** Was +4.7% to +10.1% in 2023-2024, collapsed
-   to zero in 2025-2026 at all thresholds. DeFi maturation changed what
-   withdrawals mean (staking, LP, L2 bridging vs directional buying).
+2. **Withdrawal edge has decayed. DeFi maturation is the evidenced explanation.**
+   Was +4.7% to +10.1% in 2023-2024, collapsed to zero in 2025-2026 at all
+   thresholds -- including $10M+, which rules out "just small-actor dilution"
+   and points to withdrawals no longer meaning directional buying (staking,
+   LP, L2 bridging instead). This is backed directly by our own threshold data.
 
-3. **Alpha decay is asymmetric.** Buy signals decayed; sell signals strengthened.
-   Consistent with confirmation bias: participants monitor bullish whale activity
-   but ignore bearish signals, leaving the deposit edge un-arbitraged.
+3. **Alpha decay is asymmetric, and dilution should have weakened the deposit
+   signal but didn't.** As ETH's price rose, a fixed $1M threshold captured
+   progressively less committed actors (~833 ETH in 2023 vs ~250 ETH in 2026),
+   yet the deposit edge grew despite this headwind -- an argument against the
+   edge being a simple composition effect. Why the deposit signal specifically
+   wasn't arbitraged away is speculative and unevidenced: one untested
+   hypothesis is that whale-watching tools broadcast bullish activity more than
+   bearish activity. A brief search found only an indirect, tangential data
+   point (Whale Alert tweets about USDT minting amplify BTC price reactions),
+   not a direct test of buy/sell broadcast asymmetry. Treat this as plausible,
+   not proven -- unlike finding #2, it is not backed by our own data.
 
 4. **Unconditional whales are not smart money.** Full-dataset hit rates near 50%.
    The edge is conditional on sentiment regime and transaction size.
+
+5. **The edge is real but comes with real pain: maximum adverse excursion.**
+   For deposit signals that eventually paid off, the average drawdown before
+   they did grows sharply with horizon: 2.7% at 1 week to 20.1% at 6 months
+   (unconditional), with the worst 10% of "correct" 6-month trades seeing a
+   54.4% adverse move first. Confirms Limitation #6 (now solved, partially --
+   MAE is measured, but no stop-loss RULE is simulated).
 
 **Secondary finding (ML model):**
 Walk-forward Random Forest with 22 features achieves 53.3% accuracy at 6h.
 Feature importance shows price momentum dominates; whale features rank low.
 
 - Key files: `src/analysis/event_study.py`, `scripts/run_event_study.py`,
-  `scripts/run_walk_forward.py`, `scripts/run_threshold_sensitivity.py`
+  `scripts/run_walk_forward.py`, `scripts/run_threshold_sensitivity.py`,
+  `scripts/run_drawdown_analysis.py`
 - ML files: `src/features/phase4_features.py`, `src/models/price_predictor.py`
 
 ### Phase 5 -- Dashboard, Deployment, and Write-up (COMPLETE)
@@ -199,6 +217,50 @@ Update this section at the end of each working session.
   selector for sections 2/3/6, so yearly stability, threshold sensitivity, and
   the asymmetry chart can all be viewed at 1h through 6m, not just 24h.
 - Repo renamed on GitHub: whale_signals -> crypto-whale-signals-and-sentiment.
-- Next steps: consider whether section 4 (sentiment) or section 5
-  (distribution) ever warrant their own horizon control once more data
-  reduces the small-n risk at long horizons.
+- Fred requested a 4-part rigour pass on the write-up. Tackled 3 of 4 this
+  session (order: drawdown first, since its output fed the Discussion
+  rewrite; then the two Discussion edits together):
+  - **Drawdown / maximum adverse excursion (new script, done).**
+    `scripts/run_drawdown_analysis.py` computes, for each long-horizon
+    deposit signal, the worst price move against the position before the
+    final outcome (a forward rolling max via the reverse-rolling-max pandas
+    idiom, unit-tested before running on real data). Added README Section 8
+    and softened Limitation #6 accordingly. Cross-checked against existing
+    published numbers (extreme-greed 6-month blended return -23.1% here vs
+    -22.6% already in the README) to confirm no bug before writing it up.
+  - **Dilution-strengthens-the-case argument (done).** Moved out of
+    Limitations into Discussion and the abstract: a fixed $1M threshold
+    getting diluted over time should have weakened the deposit edge; instead
+    it grew. Argues against the edge being a composition effect.
+  - **Evidenced vs speculative reframing (done).** DeFi maturation (backed by
+    our own threshold data: signal is dead at every size) is now explicitly
+    the primary explanation for withdrawal decay. The whale-tool-broadcasting
+    idea for why deposit survived is now explicitly labelled speculative and
+    untested. Ran one cheap web search for supporting evidence; found only an
+    indirect, tangential data point (Whale Alert/USDT-minting amplification
+    study) which is cited but clearly hedged, not treated as confirmation.
+  - **Deferred: effective sample size / overlapping-event correction
+    (Priority 1, NOT yet implemented).** Investigated this first and found it
+    is a bigger issue than initially framed: clustering whale events into
+    non-overlapping calendar-period blocks (robustness-checked across
+    multiple block-anchor offsets) shows even the UNCONDITIONAL 24h claim
+    loses significance (raw 50.5% hit rate, p=1.1e-4, n=180,963 -> effective
+    49.4%, p=0.70, n=1,283 independent days). The abstract's flagship 78.3%
+    figure ($10M+ deposits, extreme greed, 2025 only, N=350) comes from just
+    10 distinct calendar days across 5 episodes -- but is directionally
+    robust under the correction (80.0% effective hit rate, broad-based across
+    8 of 10 days, not one outlier), just underpowered (p=0.109). The honest
+    dividing line is not horizon length (as originally proposed) but breadth
+    of claim: broad/unconditional numbers do not survive scrutiny at any
+    horizon; narrow/large-ticket/regime-specific numbers hold up directionally
+    but cannot clear conventional significance with only a handful of
+    independent market episodes in 3.5 years of data. Fred wants to decide
+    the correction methodology (block-clustering, the simple method already
+    computed, vs. Newey-West/HAC-corrected regression, the more standard but
+    heavier academic tool) before this gets implemented and written up.
+- Next steps: resolve Priority 1 (decide correction method, rewrite abstract
+  around the broad-vs-narrow distinction, add effective-N alongside raw N
+  throughout the results tables). Also still open: whether section 4
+  (sentiment) or section 5 (distribution) on the dashboard ever warrant their
+  own horizon control once more data reduces the small-n risk at long
+  horizons.

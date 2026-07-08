@@ -12,7 +12,9 @@ This study investigates whether large on-chain Ethereum transactions predict sho
 
 2. **Whale withdrawals (buy signals) lost their edge entirely.** In 2023-2024, withdrawals during negative funding showed +4.7% to +10.1% edge. By 2025-2026, this collapsed to zero at all thresholds. At longer horizons, withdrawals become actively wrong: -6.1% edge at 1 month, -12.9% at 6 months. We attribute this to DeFi maturation: withdrawals increasingly represent staking, liquidity provision, and L2 bridging rather than directional buying.
 
-3. **Alpha decay is asymmetric.** Buy-side signals decayed; sell-side signals strengthened. One possible explanation is that whale-watching tools disproportionately broadcast bullish activity, leaving bearish signals less crowded.
+3. **Alpha decay is asymmetric, and a dilution effect that should have weakened the deposit signal did not.** As ETH's price rose, a fixed $1M threshold captured progressively smaller, less committed actors (~833 ETH in 2023 vs ~250 ETH in 2026). Nonetheless, the deposit edge grew despite this headwind, arguing against a simple composition effect. The reason why the deposit signal specifically was not arbitraged away (unlike withdrawals) is still speculative: one untested hypothesis is that whale-watching tools disproportionately broadcast bullish activity, leaving bearish signals less crowded.
+
+4. **The edge is real but comes with real pain.** For long-horizon deposit signals that eventually paid off, we measured the maximum adverse excursion: the worst unrealised loss before the signal worked. This grows sharply with horizon, from 2.7% at 1 week to 20.1% at 6 months on average (unconditional), with the worst 10% of "correct" 6-month trades seeing a 54.4% adverse move first. The edge is not free money; it requires tolerating drawdowns most traders cannot tolerate.
 
 ---
 
@@ -29,6 +31,7 @@ This study investigates whether large on-chain Ethereum transactions predict sho
 - [Results: Long Horizons](#5-long-horizon-analysis-1h-to-6-months)
 - [Results: Deposits by Year at Long Horizons](#6-deposit-edge-by-year-at-long-horizons)
 - [Results: ML Model](#7-ml-model-secondary-analysis)
+- [Results: Drawdown During the Holding Period](#8-drawdown-during-the-holding-period)
 - [Discussion](#discussion)
 - [Limitations](#limitations)
 - [Dashboard](#interactive-dashboard)
@@ -389,21 +392,53 @@ Feature importance shows price momentum and market sentiment dominate; whale fea
 
 ---
 
+### 8. Drawdown During the Holding Period
+
+The long-horizon results above report only the return at the END of the holding period. A position that finishes +5% may have been -20% at some point along the way, which most traders cannot tolerate even if the signal is "eventually right". This section measures it directly: the maximum adverse excursion (MAE), the worst unrealised loss a trader following the deposit (sell) signal would have marked-to-market before the final outcome, computed from the full hourly price path over the holding window, not just its endpoint.
+
+The table below covers only deposits where the signal was EVENTUALLY correct (price was lower at t+h), but the question is how much pain they required before winning.
+
+#### Whale Deposits (sell signal), unconditional - MAE on eventually-correct trades
+
+| Horizon | N | Mean MAE | Median MAE | P90 MAE | Mean Final Return |
+|---------|---|----------|-------------|---------|---------------------|
+| 1 week | 91,764 | 2.7% | 2.0% | 6.2% | -6.4% |
+| 2 weeks | 95,088 | 4.3% | 3.5% | 9.7% | -8.8% |
+| 1 month | 99,620 | 6.0% | 5.2% | 12.9% | -12.8% |
+| 3 months | 93,568 | 9.6% | 7.6% | 21.0% | -26.1% |
+| 6 months | 92,904 | **20.1%** | 13.3% | **54.4%** | -30.4% |
+
+#### Whale Deposits (sell signal), conditional: extreme greed (FnG > 75) - MAE on eventually-correct trades
+
+| Horizon | N | Mean MAE | Median MAE | P90 MAE | Mean Final Return |
+|---------|---|----------|-------------|---------|---------------------|
+| 1 week | 10,760 | 2.8% | 2.3% | 6.0% | -8.0% |
+| 2 weeks | 11,723 | 4.4% | 3.8% | 10.3% | -9.3% |
+| 1 month | 15,707 | 6.3% | 4.9% | 13.7% | -12.0% |
+| 3 months | 17,890 | 12.3% | 9.7% | 29.4% | -27.0% |
+| 6 months | 19,539 | **15.5%** | 12.4% | 31.7% | -27.6% |
+
+MAE grows sharply with horizon, roughly in step with the edge itself. A 6-month deposit signal that eventually paid off (unconditional case) required tolerating a 20.1% adverse move on average before it did, and the worst 10% of "correct" trades saw the price rise 54.4% against the position first. The edge documented in Section 5 is real, but a trader (or a stop-loss rule) would need to survive drawdowns of this size to actually collect it. Trades where the signal was eventually WRONG are, worse on both counts, e.g. unconditional 6-month misses averaged 80.1% mean MAE (see `results/drawdown_analysis.csv` for the full breakdown).
+
+This does not model an actual stop-loss RULE. MAE tells us the worst point reached, not whether a specific risk-management rule would have survived it. Simulating a concrete stop-loss policy is a next step.
+
 ## Discussion
 
-### Why did withdrawal edge decay?
+### Why did withdrawal edge decay? (evidenced)
 
-Withdrawing from an exchange used to mean one thing: you are holding, you are bullish. In 2023, that was mostly true. By 2025, DeFi had matured enough that people withdraw to stake, provide liquidity, bridge to L2s, or interact with protocols. None of which tell you anything about price direction. The withdrawal signal drowned in noise.
+Withdrawing from an exchange used to mean one thing: you are holding = you are bullish. In 2023, that was mostly true. By 2025, DeFi had matured enough that people withdraw to stake, provide liquidity, bridge to L2s, or interact with protocols. None of which tell you anything about price direction. The withdrawal signal drowned in noise.
 
-The threshold analysis backs this up. If the problem were just small-time actors diluting the signal, $10M+ withdrawals should still show edge. They don't. The signal is dead at every size, which points to a structural change in what withdrawals mean, not just who is making them.
+The threshold analysis backs this up. If the problem were just small-time actors diluting the signal, $10M+ withdrawals should still show edge. But they don't. The signal is dead at every size, which points to a structural change in the meaning of withdrawals.
 
-### Why did deposit edge survive?
+### Why did deposit edge survive and grow?
 
 There is basically one reason to deposit ETH to Binance or Coinbase: you want to sell it. That has not changed. Deposits are still a clean sell signal regardless of what is happening in DeFi.
 
-Why the edge grew over time is less clear. One possibility is that whale-watching tools (Nansen, Arkham, Whale Alert) disproportionately broadcast buy signals because that is what their users want to hear. Sell signals get less attention, so fewer people act on them, and the edge survives. But we do not have direct evidence for this. It is a plausible explanation, not a proven one.
+**A stronger case than we initially gave it credit for.** As ETH's price rose from ~$1,200 (2023) to ~$4,000+ (2026), a fixed $1M threshold captured progressively less committed actors: ~833 ETH in 2023 versus ~250 ETH in 2026 (see Limitations). If the deposit edge were simply a composition effect, dilution should have weakened it over time, since the $1M+ pool increasingly contains smaller, less-informed sellers. Instead, the edge grew. That an effect strengthened despite a headwind that should have worked against it argues against "the edge is just dilution/composition" as the explanation, and for the edge being a genuine, if modest, informational advantage.
 
-What we can say more confidently: the edge scales with transaction size. $10M+ deposits during extreme greed show the strongest signal in the dataset. These are not panic sellers. They are large actors making deliberate moves at market tops.
+**Why the edge specifically wasn't arbitraged away is speculative, not evidenced.** One hypothesis is that whale-watching tools (Nansen, Arkham, Whale Alert) disproportionately broadcast buy-flavoured activity because that is what their users want to hear, leaving sell signals less crowded and less arbitraged. We have no direct evidence for this claim. A brief search turned up one indirect, tangential data point: a 2023 study found Bitcoin's price reacts more strongly to Whale Alert tweets around USDT minting events, which are typically read as bullish.
+
+What we can say more confidently is that the edge scales with transaction size. $10M+ deposits during extreme greed show the strongest signal in the dataset. They are large actors making deliberate moves at market tops.
 
 ### Whale sellers think in months
 
@@ -421,9 +456,7 @@ The deposit edge at 24h is small (+1.3%). At 1 month it is +4.8%. At 6 months, +
 
 4. **On-chain latency.** Whale transactions are visible after block confirmation (~12 seconds), but monitoring, processing, and executing a response trade adds delay.
 
-5. **Fixed USD threshold ignores ETH price growth.** A $1M transaction was ~833 ETH in 2023 but only ~250 ETH in 2026. The $1M pool gets diluted with smaller actors over time. An ETH-denominated threshold or inflation-adjusted threshold would be more rigorous but harder to compare across years.
-
-6. **No stop-loss or drawdown analysis.** Long-horizon results (1 month to 6 months) assume holding a position to maturity. In practice, a trade that is ultimately correct can experience severe drawdowns mid-holding period. Without stop-loss modelling, we ignored the possibility that a position that finishes +5% may have been -20% at some point, which most traders cannot tolerate.
+5. **Fixed USD threshold ignores ETH price growth.** A $1M transaction was ~833 ETH in 2023 but only ~250 ETH in 2026. The $1M pool gets diluted with smaller actors over time. An ETH-denominated threshold or inflation-adjusted threshold would be more rigorous but harder to compare across years. 
 
 ---
 
@@ -480,10 +513,11 @@ whale_signals/
 │   ├── run_phase4_features.py  # Feature matrix builder
 │   ├── run_phase4_model.py     # ML walk-forward model
 │   ├── run_sentiment_pipeline.py  # News sentiment scorer
+│   ├── run_drawdown_analysis.py # Maximum adverse excursion (Section 8)
 │   └── build_dashboard_data.py # Pre-computes app/dashboard_data.json
 ├── tests/                      # Unit tests
 ├── docs/                       # Design notes, project arc
-└── results/                    # Walk-forward CSV, threshold CSV, charts
+└── results/                    # Walk-forward, threshold, and drawdown CSVs, charts
 ```
 
 ## How to Run
@@ -503,6 +537,9 @@ python scripts/run_threshold_sensitivity.py
 
 # ML model (walk-forward Random Forest)
 python scripts/run_phase4_model.py
+
+# Maximum adverse excursion (drawdown during the holding period)
+python scripts/run_drawdown_analysis.py
 
 # Rebuild the dashboard's pre-computed data, then launch it
 python scripts/build_dashboard_data.py
