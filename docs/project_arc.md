@@ -54,8 +54,13 @@ Classifier accuracy on time-based hold-out: 71%.
 
 Three sentiment sources:
 
-1. **News sentiment:** Kaggle Bitcoin news dataset (5,906 articles in overlap
-   window), scored with VADER and RoBERTa. Proved to be a weak signal.
+1. **News sentiment:** Kaggle Bitcoin news dataset (5,906 articles, Jan 2023
+   to Sep 2024), scored with VADER (this project's own code, rule-based, not
+   ML). The dataset also ships with a pre-computed RoBERTa sentiment score
+   (a transformer model fine-tuned on financial news, run by whoever built
+   the Kaggle dataset, not by us); it was only used for a sanity check
+   correlation against VADER, never independently tested against price or
+   whale activity. VADER proved a weak signal for predicting price.
 
 2. **Fear & Greed Index:** Daily composite score 0-100 from alternative.me.
    3,075 records.
@@ -185,7 +190,8 @@ name but GitHub's redirect keeps `git push` working.
 | Phase   | ML Component              | Type                                          |
 |---------|---------------------------|-----------------------------------------------|
 | Phase 2 | Transaction classifier    | Supervised classification (Random Forest)     |
-| Phase 3 | Sentiment scoring         | Pre-trained NLP (VADER)                       |
+| Phase 3 | Sentiment scoring (VADER) | Not ML -- rule-based/lexicon, no training     |
+| Phase 3 | RoBERTa score (unused)    | Pre-trained NLP, but third-party and untested |
 | Phase 4 | Price impact predictor    | Supervised classification (RF + LogReg)       |
 | Phase 4 | Event study               | Statistical testing (binomial test)           |
 

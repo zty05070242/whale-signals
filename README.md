@@ -76,7 +76,7 @@ Prior work on "whale watching" typically treats it as a price prediction problem
 | Binance API | Hourly ETH/USDT prices | 30,801 | Jan 2023 to Jul 2026 | Free |
 | Binance API | ETH funding rates (8-hourly) | 3,851 | Jan 2023 to Jul 2026 | Free |
 | alternative.me | Crypto Fear & Greed Index | 3,075 | Feb 2018 to Jul 2026 | Free |
-| Kaggle | Bitcoin news headlines | 5,906 (overlap) | 2023 to 2025 | Free |
+| Kaggle | Bitcoin news headlines | 5,906 | Jan 2023 to Sep 2024 | Free |
 | GitHub (open-source) | Wallet address labels | 52,768 | Snapshot | Free |
 
 ## Methodology
@@ -103,7 +103,8 @@ Category distribution:
 ### Sentiment Data (Phase 3)
 - **Fear & Greed Index:** Daily composite 0-100 (volatility, volume, social media, BTC dominance)
 - **Binance funding rate:** 8-hourly real-money sentiment. Positive = longs pay shorts (bullish crowd). Negative = shorts pay longs (bearish crowd)
-- **News sentiment:** 5,906 Bitcoin articles scored with VADER. Tested and discarded as uninformative. Market-derived sentiment (FnG, funding rate) is far more useful. News sentiment code remains in the repository but is not used in the core analysis
+- **News sentiment:** 5,906 Bitcoin articles scored with VADER. Tested and discarded as uninformative for predicting price. Market-derived sentiment (FnG, funding rate) is far more useful. News sentiment code remains in the repository but is not used in the core analysis
+- **Does whale behaviour track the news?** A separate check, over the roughly 20 months where news coverage overlaps the whale data (Jan 2023 to Sep 2024, 484 days with at least one article): daily news sentiment shows no relationship with daily whale net flow (deposit $ minus withdrawal $). Correlation is essentially zero (r=+0.06, not significant), and bearish news days versus bullish news days show near-identical average whale activity (p=0.95). Whales are neither confirming nor contradicting the public narrative; they appear to act independently of it. A second null result for news sentiment, on a different question than the price-prediction test above (see `scripts/run_sentiment_whale_consistency.py`)
 
 ### Event Study (Phase 4 - Core Analysis)
 - For each whale transaction, compute forward ETH return at 1h, 6h, 24h, 3d, 1w, 2w, 1m, 3m, 6m
@@ -528,6 +529,7 @@ whale_signals/
 │   ├── run_phase4_model.py     # ML walk-forward model
 │   ├── run_sentiment_pipeline.py  # News sentiment scorer
 │   ├── run_drawdown_analysis.py # Maximum adverse excursion (Section 8)
+│   ├── run_sentiment_whale_consistency.py # News sentiment vs whale activity
 │   └── build_dashboard_data.py # Pre-computes app/dashboard_data.json
 ├── tests/                      # Unit tests
 ├── docs/                       # Design notes, project arc
@@ -554,6 +556,9 @@ python scripts/run_phase4_model.py
 
 # Maximum adverse excursion (drawdown during the holding period)
 python scripts/run_drawdown_analysis.py
+
+# Does whale activity track news sentiment?
+python scripts/run_sentiment_whale_consistency.py
 
 # Rebuild the dashboard's pre-computed data, then launch it
 python scripts/build_dashboard_data.py
