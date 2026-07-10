@@ -39,6 +39,7 @@
 - [結果:牛市與熊市的市場狀態](#9-bull-vs-bear-market-regimes)
 - [討論](#discussion)
 - [限制](#limitations)
+- [相關學術文獻](#related-academic-literature)
 - [互動式儀表板](#interactive-dashboard)
 - [儲存庫結構](#repository-structure)
 - [如何執行](#how-to-run)
@@ -94,7 +95,7 @@
 
 ### 交易分類(第二階段)
 - 對已知錢包採用規則式標記(交易所存入、提領、DeFi、錢包對錢包)
-- 最初建構了一個機器學習分類器(隨機森林),用以預測未知錢包的類別,在以時間切分的保留測試集上達到 71% 準確率。在將標籤資料集從 30 個地址擴增至 52,768 個地址後,標籤覆蓋率提升至 62.8%,降低了對分類器的依賴。該分類器目前仍用於剩餘約 37% 收發雙方皆為未知地址的交易
+- 最初建構了一個機器學習分類器(隨機森林),用以預測未知錢包的類別,在以時間切分的保留測試集上達到 71% 準確率。在將標籤資料集從 30 個地址擴增至 52,768 個地址後,標籤覆蓋率提升至 62.8%,降低了對分類器的依賴。該分類器目前仍用於剩餘約 37% 收發雙方皆為未知地址的交易。這與 Harlev 等人(2018)針對比特幣實體類型(10 個類別,約 2 億筆交易)所處理的任務相同:他們的最佳結果是以梯度提升(Gradient Boosting,而非隨機森林)達到 77% 準確率,因此本專案的 71% 與已發表結果處於同一區間,但並非完全相同
 
 類別分佈:
 
@@ -107,11 +108,13 @@
 
 ### 情緒資料(第三階段)
 - **恐懼與貪婪指數:** 每日綜合指數 0-100(波動度、成交量、社群媒體、比特幣主導率)
-- **Binance 資金費率:** 每 8 小時更新一次的真實資金情緒指標。正值 = 多方支付空方(市場偏多);負值 = 空方支付多方(市場偏空)
+- **Binance 資金費率:** 每 8 小時更新一次的真實資金情緒指標。正值 = 多方支付空方(市場偏多);負值 = 空方支付多方(市場偏空)。Alexander 等人(2020)確立了這背後所依據的永續合約價格發現微觀結構基礎
 - **新聞情緒:** 5,906 篇比特幣相關文章以 VADER 進行情緒評分。經測試後發現對價格預測沒有幫助,已捨棄不用。市場衍生的情緒指標(恐懼與貪婪指數、資金費率)有用得多。新聞情緒的程式碼仍保留在儲存庫中,但未用於核心分析
-- **巨鯨行為是否跟隨新聞？** 另一項獨立檢驗:在新聞資料與巨鯨資料重疊的約 20 個月期間(2023 年 1 月至 2024 年 9 月,共 484 天至少有一篇文章),每日新聞情緒與每日巨鯨淨流量(存入金額減提領金額)之間並無關聯。相關係數幾乎為零(r=+0.06,不顯著),而看跌新聞日與看漲新聞日的巨鯨平均活動量幾乎相同(p=0.95)。巨鯨既不是在確認,也不是在反駁公開的新聞論述;他們似乎獨立於新聞行事。這是本專案中新聞情緒的第二個空結果:前一項發現它無法預測價格,而這項檢驗發現它也無法反映巨鯨行為(詳見 `scripts/run_sentiment_whale_consistency.py`)
+- **巨鯨行為是否跟隨新聞？** 另一項獨立檢驗:在新聞資料與巨鯨資料重疊的約 20 個月期間(2023 年 1 月至 2024 年 9 月,共 484 天至少有一篇文章),每日新聞情緒與每日巨鯨淨流量(存入金額減提領金額)之間並無關聯。相關係數幾乎為零(r=+0.06,不顯著),而看跌新聞日與看漲新聞日的巨鯨平均活動量幾乎相同(p=0.95)。巨鯨既不是在確認,也不是在反駁公開的新聞論述;他們似乎獨立於新聞行事。這是本專案中新聞情緒的第二個空結果:前一項發現它無法預測價格,而這項檢驗發現它也無法反映巨鯨行為(詳見 `scripts/run_sentiment_whale_consistency.py`)。這個解讀與雜訊交易者理論(noise-trader theory,De Long 等人,1990;Black,1986;Shleifer & Summers,1990)一致,該理論將根據私有或鏈上資訊行動的知情交易者,與依據公開情緒反應的雜訊交易者區分開來;不過這項實證檢驗本身(巨鯨流量與 VADER 情緒評分新聞的比較)是本專案自行設計的,並非取自文獻
+- **關於恐懼與貪婪指數本身的提醒:** 文獻中關於 CFGI 是否能預測加密貨幣報酬的證據其實相當分歧。部分研究發現兩者存在關聯(Łęt 等人,2023;Cavalheiro 等人,2024);而一項較新的向量自迴歸(VAR)研究則發現因果方向恰好相反——是比特幣報酬帶動指數變化,而非反過來,且情緒指標並未帶來任何樣本外的預測增益。本專案僅將恐懼與貪婪指數作為條件變數使用(第 2 節),從未將其視為獨立的預測因子,而這正是這些分歧證據實際支持的立場
 
 ### 事件研究(第四階段——核心分析)
+- 最接近的學術類比:Hoang 與 Baur(2022)發現比特幣交易所儲備的流入/流出與同期及未來報酬呈負相關(使用的是彙總儲備資料);Ante 與 Fiedler(2021)則針對大額比特幣轉帳進行了逐筆交易的事件研究。兩者皆針對比特幣,分別採用彙總儲備或轉帳層級的研究設計;本專案針對以太坊、逐筆交易的設計屬於同一研究傳統,但文獻中尚未有直接的複現研究(詳見[相關學術文獻](#related-academic-literature))
 - 針對每一筆巨鯨交易,計算其後 1 小時、6 小時、24 小時、3 天、1 週、2 週、1 個月、3 個月、6 個月的 ETH 遠期報酬
 - 衡量命中率:巨鯨的行動是否正確預測了價格方向？
 - 與**基準率**(同一市場條件下所有時段)比較,以分離出巨鯨特有的優勢
@@ -442,6 +445,8 @@ MAE 隨時間跨度增加,增幅大致與優勢本身同步。一個最終獲利
 
 這裡並未模擬實際的停損規則。MAE 只告訴我們曾經到達的最糟點位,並不代表某個具體的風險管理規則是否能夠撐過去。模擬一個具體的停損政策是下一步的工作。
 
+MAE 這個名稱本身是一個業界從業者的概念(Sweeney,1997),而非學術概念:沒有任何同行評審期刊論文正式採用這個術語。但其背後的核心概念——持有期間內、與路徑相關的回撤——確實有嚴謹的學術基礎(Grossman & Zhou,1993;Magdon-Ismail 等人,2004;Chekhlov、Uryasev & Zabarankin,2005),就算本節沿用 Sweeney 最初提出的名稱,這些文獻仍是該概念更具學術辯護力的引用來源。
+
 ---
 
 <a id="9-bull-vs-bear-market-regimes"></a>
@@ -466,6 +471,8 @@ MAE 隨時間跨度增加,增幅大致與優勢本身同步。一個最終獲利
 
 這些都是未經校正觀測值重疊問題(詳見限制章節)的原始 p 值,因此,與本文件其他地方一樣,可能高估了統計信心。值得慶幸的是,由於時間跨度較短,獨立觀測值遠多於前述完全站不住腳的長時間跨度主張,因此這裡的高估程度應該較輕微,但並非零(詳見 `scripts/run_bull_bear_analysis.py`)。
 
+狀態相依的可預測性在股票與商品市場中已獲得充分證實(Guidolin & Timmermann,2008;Haase & Neuenkirch,2023,後者發現可預測性集中在動盪時期,與本文發現的熊市優勢更強的結果一致)。目前尚未發現針對加密貨幣、以牛熊市狀態檢驗巨鯨訊號強度的文獻,因此本項結果是一項與上述文獻方向一致、但並非直接複現的新貢獻。也值得引述一個警示性的反例:Kirby(2023)指出,股票市場中部分牛熊市狀態轉換所呈現的「可預測性」,實際上可能只是報酬偏度(return skewness)造成的假象,而非真實的時變訊號,這種可能性在本文中同樣無法排除。
+
 ---
 
 <a id="discussion"></a>
@@ -476,6 +483,8 @@ MAE 隨時間跨度增加,增幅大致與優勢本身同步。一個最終獲利
 在 2023 年,從交易所提領大多代表看漲的觀點。到了 2025 年,DeFi 已經成熟到人們會為了質押、提供流動性、橋接至 L2,或與各種協議互動而提領資金。這些行為都不具有價格方向性的資訊價值。
 
 門檻分析支持了這個論點。如果問題只是小額參與者稀釋了訊號,那麼 1,000 萬美元以上的提領應該仍展現優勢。但這個訊號在每一個規模下都已失效,這指向的是提領行為意涵的結構性轉變。
+
+優勢隨著愈來愈多參與者察覺而衰退,這是一個已獲充分記錄的普遍現象(McLean & Pontiff,2016,發現已發表的股市異常現象在樣本外與發表後分別損失 26% 至 58% 的報酬;Vukovic 等人,2026,則顯示加密貨幣市場效率本身也會隨時間變化)。而本文提出的具體機制——DeFi 成熟化正是改變提領行為意涵的原因——是本專案自己的假說:我們並未找到任何同行評審文獻直接證實,交易所提領行為愈來愈多代表質押、提供流動性或 L2 橋接,而非自我保管。這應被理解為一個合理、可檢驗的解釋,而非已獲證實的結論(詳見限制章節第 2 項)。
 
 ### 為何存入優勢得以存續並增強？
 
@@ -493,14 +502,14 @@ MAE 隨時間跨度增加,增幅大致與優勢本身同步。一個最終獲利
 
 ### 78.3% 這個主張發生了什麼事
 
-我們最初報告,極度貪婪期間 1,000 萬美元以上的存入,正確預測 24 小時價格下跌的比例達 78.3%。仔細檢視這個數字的來源後發現,背後的交易集中在少數幾天內,全部發生在 2025 年的幾週之內,而非分散在整個資料集中。當一個統計數字背後的事件如此群聚時,它們大多是在描述同一批市場波動,而非許多各自獨立的事件。這正是限制章節所描述的觀測值重疊問題,也正是我們不信任這個特定數字的原因,儘管背後的交易與運算本身完全真實。
+我們最初報告,極度貪婪期間 1,000 萬美元以上的存入,正確預測 24 小時價格下跌的比例達 78.3%。仔細檢視這個數字的來源後發現,背後的交易集中在少數幾天內,全部發生在 2025 年的幾週之內,而非分散在整個資料集中。當一個統計數字背後的事件如此群聚時,它們大多是在描述同一批市場波動,而非許多各自獨立的事件。這正是限制章節所描述的觀測值重疊問題——在事件研究文獻中被正式定義為事件日期群聚所導致的橫截面相關性(cross-sectional dependence,Kolari & Pynnönen,2010)——也正是我們不信任這個特定數字的原因,儘管背後的交易與運算本身完全真實。
 
 ---
 
 <a id="limitations"></a>
 ## 限制
 
-1. **長時間跨度的觀測值彼此重疊。** 在 1 個月及以上的時間跨度,數千筆巨鯨事件實際上是在衡量同一次價格變動。二項式檢定的 p 值高估了顯著性。在這些時間跨度下,優勢欄位(巨鯨命中率減去基準率)比原始命中率或 p 值更具參考價值。討論章節中有一個具體案例,說明這個問題如何推翻了一個特定的頭條主張。
+1. **長時間跨度的觀測值彼此重疊。** 在 1 個月及以上的時間跨度,數千筆巨鯨事件實際上是在衡量同一次價格變動。二項式檢定的 p 值高估了顯著性。在這些時間跨度下,優勢欄位(巨鯨命中率減去基準率)比原始命中率或 p 值更具參考價值。討論章節中有一個具體案例,說明這個問題如何推翻了一個特定的頭條主張。這是事件研究文獻中一個已被正式定義的問題(即使橫截面相關性很低,事件日期的群聚仍會誇大表面上的顯著性:Kolari & Pynnönen,2010;後續研究將此推廣至部分重疊的事件視窗,這與隨時間跨度增長的優勢直接相關:Kolari、Pape & Pynnönen,2018),而非本專案特有的臨時性顧慮。學界標準的補救方法是日曆時間投資組合法(calendar-time portfolio method)或 Kolari-Pynnönen 校正檢定統計量;本專案並未採用這兩種方法,這正是為何我們將其揭露為限制,而非直接進行校正。
 
 2. **DeFi 稀釋假說尚未經過驗證。** 我們推測提領優勢的衰退,是因為提領行為愈來愈多代表非方向性的 DeFi 活動。要驗證這一點,需要追蹤提領後的鏈上活動(例如,這筆 ETH 是流入質押合約,還是冷錢包？)。
 
@@ -509,6 +518,49 @@ MAE 隨時間跨度增加,增幅大致與優勢本身同步。一個最終獲利
 4. **固定美元門檻忽略了 ETH 價格的成長。** 2023 年的 100 萬美元交易約等於 833 顆 ETH,但到 2026 年僅約 250 顆 ETH。100 萬美元這個資金池會隨時間被規模較小的參與者稀釋。以 ETH 計價或經通膨調整的門檻會更嚴謹,但會使跨年度比較更困難。
 
 5. **存入交易未經資金回轉(round-tripping)篩選。** 「巨鯨賣家的思考尺度是以月計算」這個框架,假設存入行為反映了審慎的長期觀點,但我們並不知道巨鯨為何存入資金。透過檢查同一地址是否隨後發生提領:24.1% 的存入,在 24 小時內見到同一地址發生提領;29.1% 在一週內發生,這與「持續數月的方向性觀點」這個假設,對至少一部分具有意義的事件而言並不一致。這項檢查僅確認是否發生了後續提領,並未核對金額是否與存入相符,因此無法區分真正的短期資金回轉與透過同一地址發生的不相關後續活動。整體的統計模式(存入先於下跌)也許依然成立,無論個別意圖為何,但「巨鯨在做出審慎判斷」這個敘事,應被理解為對整體現象的描述,而非對每一筆交易的斷言。
+
+---
+
+<a id="related-academic-literature"></a>
+## 相關學術文獻
+
+**事件研究群聚與觀測值重疊問題**
+- Kolari, J. W., & Pynnönen, S. (2010). "Event Study Testing with Cross-Sectional Correlation of Abnormal Returns." *Review of Financial Studies*, 23(11), 3996-4025. [同行評審]。
+- Kolari, J. W., Pape, B., & Pynnönen, S. (2018). "Event Study Testing with Cross-Sectional Correlation Due to Partially Overlapping Event Windows." SSRN 3167271. [工作論文]。
+
+**鏈上巨鯨/交易所資金流作為價格訊號**
+- Hoang, L. T., & Baur, D. G. (2022). "Loaded for bear: Bitcoin private wallets, exchange reserves and prices." *Journal of Banking & Finance*, 144, 106622. [同行評審]。
+- Ante, L., & Fiedler, I. (2021). "Market reaction to large transfers on the Bitcoin blockchain, do size and motive matter?" *Finance Research Letters*, 39, 101619. [同行評審]。
+- Chi, Y., Chu, Q., & Hao, W. (2024). "Return and Volatility Forecasting Using On-Chain Flows in Cryptocurrency Markets." arXiv 2411.06327. [工作論文]。
+
+**優勢衰減與市場成熟化**
+- McLean, R. D., & Pontiff, J. (2016). "Does Academic Research Destroy Stock Return Predictability?" *Journal of Finance*, 71(1), 5-32. [同行評審]。
+- Vukovic, D., et al. (2026). "Time-Varying Efficiency and Predictability in Cryptocurrency Markets: Forward-Looking Dynamics." *International Journal of Finance & Economics*, 31(2), 2229-2248. [同行評審]。
+
+**牛熊市狀態相依性**
+- Guidolin, M., & Timmermann, A. (2008). "Size and Value Anomalies under Regime Shifts." *Journal of Financial Econometrics*, 6(1), 1-48. [同行評審]。
+- Haase, F., & Neuenkirch, M. (2023). "Predictability of bull and bear markets: A new look at forecasting stock market regimes (and returns) in the US." *International Journal of Forecasting*, 39(2), 587-605. [同行評審]。
+- Kirby, C. (2023). "A closer look at the regime-switching evidence of bull and bear markets." *Finance Research Letters*, 52, 103369. [同行評審]。
+
+**情緒代理指標:資金費率與恐懼貪婪指數**
+- Alexander, C., Choi, J., Park, H., & Sohn, S. (2020). "BitMEX bitcoin derivatives: Price discovery, informational efficiency, and hedging effectiveness." *Journal of Futures Markets*, 40(1), 23-43. [同行評審]。
+- Łęt, B., Sobański, K., Świder, W., & Włosik, K. (2023). "Investor Sentiment and Efficiency of the Cryptocurrency Market: The Case of the Crypto Fear & Greed Index." In *Eurasian Business and Economics Perspectives*, vol. 25, Springer. [同行評審]。
+- Cavalheiro, E. A., Vieira, K. M., & Thue, P. S. (2024). "The impact of investor greed and fear on cryptocurrency returns: a Granger causality analysis of Bitcoin and Ethereum." *Review of Behavioral Finance*, 16(5), 819-835. [同行評審]。
+- Gessie, L. (2026). "Do bitcoin returns move sentiment? Evidence from the crypto fear & greed index." ScienceDirect,發布於 2026 年 1 月 13 日。[同行評審,批判性發現;確切期刊名稱與卷期尚未獨立確認]。
+
+**錢包/地址分類的機器學習方法**
+- Harlev, M. A., Sun Yin, H., Langenheldt, K. C., Mukkamala, R. R., & Vatrapu, R. (2018). "Breaking Bad: De-Anonymising Entity Types on the Bitcoin Blockchain Using Supervised Machine Learning." *Proceedings of the 51st Hawaii International Conference on System Sciences (HICSS)*, 3497-3506. [同行評審/會議論文]。
+
+**雜訊交易者理論**
+- De Long, J. B., Shleifer, A., Summers, L. H., & Waldmann, R. J. (1990). "Noise Trader Risk in Financial Markets." *Journal of Political Economy*, 98(4), 703-738. [同行評審]。
+- Black, F. (1986). "Noise." *Journal of Finance*, 41(3), 529-543. [同行評審]。
+- Shleifer, A., & Summers, L. H. (1990). "The Noise Trader Approach to Finance." *Journal of Economic Perspectives*, 4(2), 19-33. [同行評審]。
+
+**最大不利變動(MAE)/路徑相關回撤**
+- Sweeney, J. L. (1997). *Maximum Adverse Excursion: Analyzing Price Fluctuations for Trading Management.* John Wiley & Sons. [業界著作]。
+- Grossman, S. J., & Zhou, Z. (1993). "Optimal Investment Strategies for Controlling Drawdowns." *Mathematical Finance*, 3(3), 241-276. [同行評審]。
+- Magdon-Ismail, M., Atiya, A. F., Pratap, A., & Abu-Mostafa, Y. S. (2004). "On the Maximum Drawdown of a Brownian Motion." *Journal of Applied Probability*, 41(1), 147-161. [同行評審]。
+- Chekhlov, A., Uryasev, S., & Zabarankin, M. (2005). "Drawdown Measure in Portfolio Optimization." *International Journal of Theoretical and Applied Finance*, 8(1), 13-58. [同行評審]。
 
 ---
 

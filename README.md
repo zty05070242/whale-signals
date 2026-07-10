@@ -512,7 +512,7 @@ We initially reported that $10M+ deposits during extreme greed correctly predict
 **On-chain whale / exchange-flow activity as a price signal** 
 - Hoang, L. T., & Baur, D. G. (2022). "Loaded for bear: Bitcoin private wallets, exchange reserves and prices." *Journal of Banking & Finance*, 144, 106622. [Peer-reviewed].
 - Ante, L., & Fiedler, I. (2021). "Market reaction to large transfers on the Bitcoin blockchain, do size and motive matter?" *Finance Research Letters*, 39, 101619. [Peer-reviewed]. 
-- Chi, Y., Chu, Q., & Hao, W. (2024). "Return and Volatility Forecasting Using On-Chain Flows in Cryptocurrency Markets." arXiv 2411.06327. [Working paper]. F
+- Chi, Y., Chu, Q., & Hao, W. (2024). "Return and Volatility Forecasting Using On-Chain Flows in Cryptocurrency Markets." arXiv 2411.06327. [Working paper].
 
 **Alpha decay and market maturation** 
 - McLean, R. D., & Pontiff, J. (2016). "Does Academic Research Destroy Stock Return Predictability?" *Journal of Finance*, 71(1), 5-32. [Peer-reviewed]. 
