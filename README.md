@@ -507,12 +507,12 @@ We initially reported that $10M+ deposits during extreme greed correctly predict
 
 **Event-study clustering and the overlapping-observations problem** 
 - Kolari, J. W., & Pynnönen, S. (2010). "Event Study Testing with Cross-Sectional Correlation of Abnormal Returns." *Review of Financial Studies*, 23(11), 3996-4025.
-- Kolari, J. W., Pape, B., & Pynnönen, S. (2018). "Event Study Testing with Cross-Sectional Correlation Due to Partially Overlapping Event Windows." SSRN 3167271. [Working paper].
+- Kolari, J. W., Pape, B., & Pynnönen, S. (2018). "Event Study Testing with Cross-Sectional Correlation Due to Partially Overlapping Event Windows." SSRN 3167271.
 
 **On-chain whale / exchange-flow activity as a price signal** 
 - Hoang, L. T., & Baur, D. G. (2022). "Loaded for bear: Bitcoin private wallets, exchange reserves and prices." *Journal of Banking & Finance*, 144, 106622.
 - Ante, L., & Fiedler, I. (2021). "Market reaction to large transfers on the Bitcoin blockchain, do size and motive matter?" *Finance Research Letters*, 39, 101619.
-- Chi, Y., Chu, Q., & Hao, W. (2024). "Return and Volatility Forecasting Using On-Chain Flows in Cryptocurrency Markets." arXiv 2411.06327. [Working paper].
+- Chi, Y., Chu, Q., & Hao, W. (2024). "Return and Volatility Forecasting Using On-Chain Flows in Cryptocurrency Markets." arXiv 2411.06327.
 
 **Alpha decay and market maturation** 
 - McLean, R. D., & Pontiff, J. (2016). "Does Academic Research Destroy Stock Return Predictability?" *Journal of Finance*, 71(1), 5-32.
@@ -527,10 +527,9 @@ We initially reported that $10M+ deposits during extreme greed correctly predict
 - Alexander, C., Choi, J., Park, H., & Sohn, S. (2020). "BitMEX bitcoin derivatives: Price discovery, informational efficiency, and hedging effectiveness." *Journal of Futures Markets*, 40(1), 23-43.
 - Łęt, B., Sobański, K., Świder, W., & Włosik, K. (2023). "Investor Sentiment and Efficiency of the Cryptocurrency Market: The Case of the Crypto Fear & Greed Index." In *Eurasian Business and Economics Perspectives*, vol. 25, Springer.
 - Cavalheiro, E. A., Vieira, K. M., & Thue, P. S. (2024). "The impact of investor greed and fear on cryptocurrency returns: a Granger causality analysis of Bitcoin and Ethereum." *Review of Behavioral Finance*, 16(5), 819-835.
-- Gessie, L. (2026). "Do bitcoin returns move sentiment? Evidence from the crypto fear & greed index." ScienceDirect, published 13 Jan 2026. [Critical; exact journal name and volume/issue not independently confirmed].
 
 **Machine learning for wallet/address classification**
-- Harlev, M. A., Sun Yin, H., Langenheldt, K. C., Mukkamala, R. R., & Vatrapu, R. (2018). "Breaking Bad: De-Anonymising Entity Types on the Bitcoin Blockchain Using Supervised Machine Learning." *Proceedings of the 51st Hawaii International Conference on System Sciences (HICSS)*, 3497-3506. [Conference].
+- Harlev, M. A., Sun Yin, H., Langenheldt, K. C., Mukkamala, R. R., & Vatrapu, R. (2018). "Breaking Bad: De-Anonymising Entity Types on the Bitcoin Blockchain Using Supervised Machine Learning." *Proceedings of the 51st Hawaii International Conference on System Sciences (HICSS)*, 3497-3506.
 
 **Noise-trader theory**
 - De Long, J. B., Shleifer, A., Summers, L. H., & Waldmann, R. J. (1990). "Noise Trader Risk in Financial Markets." *Journal of Political Economy*, 98(4), 703-738.
@@ -538,7 +537,7 @@ We initially reported that $10M+ deposits during extreme greed correctly predict
 - Shleifer, A., & Summers, L. H. (1990). "The Noise Trader Approach to Finance." *Journal of Economic Perspectives*, 4(2), 19-33.
 
 **Maximum Adverse Excursion / path-dependent drawdown**
-- Sweeney, J. L. (1997). *Maximum Adverse Excursion: Analyzing Price Fluctuations for Trading Management.* John Wiley & Sons. [Practitioner/book]. 
+- Sweeney, J. L. (1997). *Maximum Adverse Excursion: Analyzing Price Fluctuations for Trading Management.* John Wiley & Sons.
 - Grossman, S. J., & Zhou, Z. (1993). "Optimal Investment Strategies for Controlling Drawdowns." *Mathematical Finance*, 3(3), 241-276.
 - Magdon-Ismail, M., Atiya, A. F., Pratap, A., & Abu-Mostafa, Y. S. (2004). "On the Maximum Drawdown of a Brownian Motion." *Journal of Applied Probability*, 41(1), 147-161.
 - Chekhlov, A., Uryasev, S., & Zabarankin, M. (2005). "Drawdown Measure in Portfolio Optimization." *International Journal of Theoretical and Applied Finance*, 8(1), 13-58.
