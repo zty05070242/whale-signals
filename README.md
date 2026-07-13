@@ -10,7 +10,7 @@ This study investigates whether large on-chain Ethereum transactions predict sho
 
 The deposit (sell) signal's edge grows monotonically from +1.3% at 24 hours to +12.4% at 6 months, and this pattern was set using 2023-2025 data and confirmed, unchanged, when tested against 2026 data collected afterward.
 
-1. **Whale deposits (sell signals) show a persistent, growing edge that strengthens with horizon, and holds at every transaction size.** The unconditional deposit edge grows from +1.3% at 24h to +4.8% at 1 month to +12.4% at 6 months. This growth over time shows up consistently whether we look at $1M+ or $10M+ deposits alone: both move from roughly flat in 2023 to +2.9% to +3.9% by 2026. Whale sellers think in weeks and months, not hours. (A separate, narrower claim we initially reported, that $10M+ deposits during extreme greed showed a 78.3% hit rate, did not hold up under closer testing; see Discussion.)
+1. **Whale deposits (sell signals) show a persistent, growing edge that strengthens with horizon, and holds at every transaction size.** The unconditional deposit edge grows from +1.3% at 24h to +4.8% at 1 month to +12.4% at 6 months. This growth over time shows up consistently whether we look at $1M+ or $10M+ deposits alone: both move from roughly flat in 2023 to +2.9% to +3.9% by 2026. Whale sellers think in weeks and months, not hours. Explicitly conditioning the signal on sentiment (extreme greed) only helps at 24h, lifting the edge by +1.3 to +2.2 percentage points depending on transaction size; at every longer horizon tested, that same conditioning weakens the edge instead, by as much as 17.3 percentage points at 6 months, consistently across all four thresholds. The unconditional signal, not the sentiment-filtered one, is what holds up over time. (A separate, narrower claim we initially reported, that $10M+ deposits during extreme greed showed a 78.3% hit rate, did not hold up under closer testing; see Discussion.)
 
 2. **Whale withdrawals (buy signals) lost their edge entirely, and this holds at every transaction size too.** In 2023-2024, withdrawals during negative funding showed +4.7% to +10.1% edge; by 2025 that had faded close to zero at every threshold, and by 2026 it was negative at every threshold from $1M+ to $10M+, ruling out the simple explanation that small, less sophisticated actors were just diluting the signal. At longer horizons, withdrawals become actively wrong: -6.1% edge at 1 month, -12.9% at 6 months. We attribute this to DeFi maturation: withdrawals increasingly represent staking, liquidity provision, and L2 bridging rather than directional buying.
 
@@ -290,7 +290,7 @@ Deposit edge is stable across thresholds and growing over time.
 | $5M+ | 5,256 | +1.8% | 752 | **+10.2%** |
 | **$10M+** | **2,856** | **+2.4%** | **350** | **+12.5%** |
 
-Edge scales dramatically with transaction size during extreme greed. $10M+ depositors are the most informed actors in the dataset.
+Edge scales dramatically with transaction size during extreme greed. $10M+ depositors are the most informed actors in the dataset. This is a 24h-only view; see Section 5 for how this same effect reverses at longer horizons.
 
 ---
 
@@ -325,6 +325,21 @@ The edge grows monotonically with horizon. Whale sellers see structural shifts m
 | 6 months | 22,038 | **87.5%** | 86.8% | +0.7% | -22.62% |
 
 At 3-6 months, the base rate does most of the work (markets crash after extreme greed regardless). But at 24h and 3 months, whales show edge above the base rate.
+
+Does that pattern hold at every transaction size, not just $1M+? The table above only shows the $1M+ threshold, and only for the horizons already listed. Comparing the extreme-greed-conditioned edge against the unconditional edge, pooled across all years and broken out by both horizon and threshold (using the four thresholds from Section 4), shows a consistent, well-powered story:
+
+**Extreme-greed conditioning effect on deposit edge (percentage points, conditioned minus unconditional)**
+
+| Horizon | $1M+ | $2M+ | $5M+ | $10M+ |
+|---------|------|------|------|-------|
+| 24h | **+1.3** | **+1.5** | **+2.0** | **+2.2** |
+| 3 days | -0.7 | -1.3 | -2.0 | -3.1 |
+| 1 week | -1.7 | -1.7 | -1.9 | -2.3 |
+| 1 month | -3.1 | -3.0 | -5.5 | -2.8 |
+| 3 months | -4.1 | -5.2 | -7.0 | -8.4 |
+| 6 months | **-12.8** | **-15.0** | **-16.8** | **-17.3** |
+
+Conditioning on extreme greed only helps at 24h, and the benefit grows with transaction size there ($1M+ to $10M+). At every horizon beyond 24h it hurts, and hurts more the larger the threshold, worsening to -12.8 to -17.3 percentage points by 6 months. Unlike the 78.3% claim, this comparison is not fragile: it is pooled across all years (N ranging from 3,206 at $10M+ to 22,038 at $1M+, constant across horizons since the same transactions are simply measured over longer windows), and the pattern holds consistently across all four independent threshold cuts, the same kind of cross-threshold consistency used elsewhere in this document as evidence a pattern is not a fluke of one specific cut. Sentiment context sharpens the signal briefly; over weeks to months, the raw, unconditional deposit signal is the stronger one (see `scripts/build_dashboard_data.py`, `build_threshold_sensitivity()`, and `app/dashboard_data.json`, also viewable interactively in the dashboard's horizon-selectable threshold-sensitivity chart).
 
 #### Whale Withdrawals (buy signal), unconditional
 
