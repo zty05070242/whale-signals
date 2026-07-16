@@ -91,7 +91,7 @@ Prior work on "whale watching" treated it as a price prediction problem: feed wh
 
 ### Transaction Classification (Phase 2)
 - Rule-based labelling for known wallets (exchange deposit, withdrawal, DeFi, wallet-to-wallet)
-- Initially built an ML classifier (Random Forest) to predict categories for unknown wallets, achieving 71% accuracy on a time-based hold-out. After expanding the label dataset from 30 to 52,768 addresses, label coverage reached 62.8%, reducing reliance on the classifier. It is still used for the remaining ~37% of transactions where both sender and receiver are unknown. This is the same task Harlev et al. (2018) tackle for Bitcoin entity types (10 categories, ~200M transactions): their best result was 77% accuracy with Gradient Boosting, not Random Forest, so 71% here is in the same range as published results, not identical to them
+- An ML classifier (Random Forest) predicts categories for unknown wallets, achieving 67.7% accuracy on a time-based hold-out (see `scripts/run_phase2_classifier_eval.py`). After expanding the label dataset from 30 to 52,768 addresses, label coverage reached 62.8%, reducing reliance on the classifier. It is still used for the remaining ~37% of transactions where both sender and receiver are unknown. This is the same task Harlev et al. (2018) tackle for Bitcoin entity types (10 categories, ~200M transactions): their best result was 77% accuracy with Gradient Boosting, modestly higher than this Random Forest's 67.7%, though the two differ in algorithm, features, and dataset
 
 Category distribution:
 

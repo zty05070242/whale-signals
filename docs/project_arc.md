@@ -48,7 +48,8 @@ Category distribution (full dataset):
 - exchange_withdrawal: 124,772 (19.3%)
 - defi_interaction: 19,308 (3.0%)
 
-Classifier accuracy on time-based hold-out: 71%.
+Classifier accuracy on time-based hold-out: 67.7% (see
+`scripts/run_phase2_classifier_eval.py`).
 
 ### Phase 3 -- Sentiment Pipeline (COMPLETE)
 
