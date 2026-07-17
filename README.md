@@ -6,6 +6,8 @@
 
 This study investigates whether large on-chain Ethereum transactions predict short-term and medium-term ETH price movements, and whether market sentiment moderates this relationship. Using an event study methodology on **646,442 whale transactions** over **3.5 years** (Jan 2023 - Jul 2026), we measure the directional hit rate of whale exchange deposits (sell signals) and withdrawals (buy signals) across nine time horizons (1 hour to 6 months), four transaction size thresholds ($1M to $10M+), seven sentiment regimes, two market regimes (bull/bear), and four independent yearly samples.
 
+**Live App:** https://crypto-whale-signals-and-sentiment-lkhygb3594bbrogn23qbps.streamlit.app/
+
 **Key findings:**
 
 The deposit (sell) signal's edge grows monotonically from +1.3% at 24 hours to +12.4% at 6 months, and this pattern was set using 2023-2025 data and confirmed, unchanged, when tested against 2026 data collected afterward.
