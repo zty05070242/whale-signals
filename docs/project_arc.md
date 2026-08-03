@@ -200,6 +200,41 @@ name but GitHub's redirect keeps `git push` working.
 
 Update this section at the end of each working session.
 
+**2026-08-03**
+- Removed the ML model cross-check (Finding #4, old Section 7) from all
+  three README languages. Not a data problem: the RF numbers (+2.0% to
+  +2.9% edge over baseline at 1h-24h) were real and honestly walk-forward
+  validated. The problem was the interpretive framing -- "whale signal is
+  conditional, not standalone, consistent with the event study" was written
+  when the event study's own long-horizon and threshold work (added later)
+  found the opposite pattern: the unconditional deposit signal grows to
+  +12.4% by 6 months and outperforms the sentiment-conditioned version past
+  24h. The ML model was only ever tested at 1h/6h/24h, so its "conditional"
+  claim and the event study's "unconditional holds up" claim were answering
+  different questions (relative feature importance in a joint short-horizon
+  model vs. univariate edge across all horizons) but read as a direct
+  contradiction sitting next to each other in Key Findings. Decided not to
+  reconcile the wording and keep both -- cleaner to retire the claim.
+- Code kept, not deleted: `src/models/price_predictor.py`,
+  `scripts/run_phase4_model.py`, and their tests are untouched and still
+  runnable, same treatment as the excluded sentiment-conditioned bull/bear
+  test earlier. Only the README narrative (Abstract Finding #4, Results
+  Section 7) was removed; Sections 8 and 9 renumbered to 7 and 8.
+- Re-measured the Phase 2 classifier accuracy on the current 646,442-row
+  dataset (was last measured at 71% on a 292k-row pull at Phase 2
+  completion, never re-checked as data grew): now 67.7%, driven mostly by
+  weaker exchange_withdrawal precision/recall. New script
+  `scripts/run_phase2_classifier_eval.py` backs this number going forward.
+- Dashboard (`app/dashboard.py`, `scripts/build_dashboard_data.py`) extended
+  with three new sections: monthly signal timeline (when deposits fire vs.
+  when they pay, bear markets shaded), bull/bear regime split, and MAE
+  drawdown -- the two published Results sections (drawdown, bull/bear) had
+  no visual presence in the live app before this.
+- Added `docs/project_arc.md`-adjacent citation work: a "Related Academic
+  Literature" section in all three READMEs, each citation individually
+  verified against the real paper before inclusion.
+- Added MIT LICENSE.
+
 **Last session: 2026-07-07**
 - Data expanded to 646,442 transactions (Jan 2023 -- Jul 2026) via second
   Dune account. Prices, funding rates, FnG all updated through Jul 2026.

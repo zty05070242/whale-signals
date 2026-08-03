@@ -18,9 +18,7 @@ The deposit (sell) signal's edge grows monotonically from +1.3% at 24 hours to +
 
 3. **Alpha decay is asymmetric, and a headwind that should have weakened the deposit signal did not.** As ETH's price rose, a fixed $1M threshold captured progressively smaller, less committed sellers (~833 ETH in 2023 vs ~250 ETH in 2026), dilution that should work against the deposit edge. Instead the edge grew, which argues against a simple composition-effect explanation. One candidate explanation for why the deposit signal avoided being arbitraged away, unlike withdrawals, is that whale-watching tools amplify bullish activity more than bearish.
 
-4. **A second, independent method reaches a compatible conclusion.** A walk-forward validated Random Forest model (24 folds, no single-shot fitting) finds a modest but real edge over baseline (+2.0% to +2.9% at short horizons), and its feature importance ranks whale-specific features near the bottom, with price momentum and market sentiment dominating. A completely different technique, applied independently, agrees with the event study: whale activity is a real but conditional signal, not a standalone predictor.
-
-5. **The edge is real, and it comes with a real cost.** For long-horizon deposit signals that eventually paid off, we measured the maximum adverse excursion: the worst unrealised loss before the signal worked. This grows sharply with horizon, from 2.7% at 1 week to 20.1% at 6 months on average, with the worst 10% of "correct" 6-month trades seeing a 54.4% adverse move first. The edge is not free money; collecting it means surviving drawdowns most traders cannot tolerate.
+4. **The edge is real, and it comes with a real cost.** For long-horizon deposit signals that eventually paid off, we measured the maximum adverse excursion: the worst unrealised loss before the signal worked. This grows sharply with horizon, from 2.7% at 1 week to 20.1% at 6 months on average, with the worst 10% of "correct" 6-month trades seeing a 54.4% adverse move first. The edge is not free money; collecting it means surviving drawdowns most traders cannot tolerate.
 
 ---
 
@@ -36,9 +34,8 @@ The deposit (sell) signal's edge grows monotonically from +1.3% at 24 hours to +
 - [Results: Threshold Sensitivity](#4-threshold-sensitivity)
 - [Results: Long Horizons](#5-long-horizon-analysis-1h-to-6-months)
 - [Results: Deposits by Year at Long Horizons](#6-deposit-edge-by-year-at-long-horizons)
-- [Results: ML Model](#7-ml-model-secondary-analysis)
-- [Results: Drawdown During the Holding Period](#8-drawdown-during-the-holding-period)
-- [Results: Bull vs Bear Market Regimes](#9-bull-vs-bear-market-regimes)
+- [Results: Drawdown During the Holding Period](#7-drawdown-during-the-holding-period)
+- [Results: Bull vs Bear Market Regimes](#8-bull-vs-bear-market-regimes)
 - [Discussion](#discussion)
 - [Limitations](#limitations)
 - [Related Academic Literature](#related-academic-literature)
@@ -405,21 +402,7 @@ The deposit edge was absent in 2023 (during bear-to-bull transition, selling was
 
 ---
 
-### 7. ML Model (Secondary Analysis)
-
-Random Forest with 22 features (whale, sentiment, price momentum) across 24 walk-forward folds:
-
-| Horizon | Baseline | RF Accuracy | Edge |
-|---------|----------|-------------|------|
-| 1h | 50.9% | 53.3% | +2.4% |
-| 6h | 50.5% | 53.3% | +2.9% |
-| 24h | 50.9% | 52.9% | +2.0% |
-
-Feature importance shows price momentum and market sentiment dominate; whale features rank near the bottom. This confirms that whale signal is conditional, not standalone, which is consistent with the event study finding.
-
----
-
-### 8. Drawdown During the Holding Period
+### 7. Drawdown During the Holding Period
 
 The long-horizon results above report only the return at the END of the holding period. A position that finishes +5% may have been -20% at some point along the way, which most traders cannot tolerate even if the signal is "eventually right". This section measures it directly: the maximum adverse excursion (MAE), the worst unrealised loss a trader following the deposit (sell) signal would have marked-to-market before the final outcome, computed from the full hourly price path over the holding window, not just its endpoint.
 
@@ -451,7 +434,7 @@ This does not model an actual stop-loss RULE. MAE tells us the worst point reach
 
 ---
 
-### 9. Bull vs Bear Market Regimes
+### 8. Bull vs Bear Market Regimes
 
 The investigation into the 78.3% claim (see Discussion) showed why it did not hold up: the transactions behind it clustered into just 10 calendar days, which overlap heavily at a 24h horizon and completely dominate a long horizon. That investigation's main lesson, that long horizons cannot be trusted with the data available, inspired the idea for a separate experiment: comparing the whale signal between bull and bear markets. It turned out this experiment naturally only needed short-to-mid-term horizons (24h, 3 days, 1 week) to be meaningful, which lined up well with what the 78.3% investigation had already taught us to trust. This section tests it across the same $1M-$10M+ threshold range used in Section 4: does the whale signal differ between bull and bear markets, and does that hold at every transaction size?
 
@@ -580,8 +563,8 @@ decay, horizon-selectable), threshold sensitivity (horizon-selectable),
 sentiment-conditioned hit rates, a return-distribution regime explorer,
 the deposit-vs-withdrawal asymmetry by year (horizon-selectable), a monthly
 signal timeline showing when deposits fire and when they pay (with bear
-markets shaded), the bull-vs-bear regime split (Section 9,
-horizon-switchable), drawdown before the payoff (Section 8's MAE), and
+markets shaded), the bull-vs-bear regime split (Section 8,
+horizon-switchable), drawdown before the payoff (Section 7's MAE), and
 limitations.
 
 The dashboard does not read the raw dataset at runtime. `scripts/build_dashboard_data.py`
@@ -617,9 +600,9 @@ whale_signals/
 │   ├── run_phase4_features.py  # Feature matrix builder
 │   ├── run_phase4_model.py     # ML walk-forward model
 │   ├── run_sentiment_pipeline.py  # News sentiment scorer
-│   ├── run_drawdown_analysis.py # Maximum adverse excursion (Section 8)
+│   ├── run_drawdown_analysis.py # Maximum adverse excursion (Section 7)
 │   ├── run_sentiment_whale_consistency.py # News sentiment vs whale activity
-│   ├── run_bull_bear_analysis.py # Whale signal by market regime (Section 9)
+│   ├── run_bull_bear_analysis.py # Whale signal by market regime (Section 8)
 │   └── build_dashboard_data.py # Pre-computes app/dashboard_data.json
 ├── tests/                      # Unit tests
 ├── docs/                       # Design notes, project arc
