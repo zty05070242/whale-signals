@@ -39,6 +39,7 @@ env/
 agent/
 data/skills/
 skills-lock.json
+CLAUDE.md
 
 # Model artefacts
 results/models/*.pkl
