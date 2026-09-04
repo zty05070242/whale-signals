@@ -135,46 +135,48 @@ Category distribution:
 ### 1. Unconditional Hit Rates
 
 Full dataset, 646,442 transactions. Hit rate > 50% = smart money, = 50% = random.
+These are raw directional hit rates, not corrected for the fact that transactions
+cluster within the same day, so they are descriptive, not significance claims (see
+Limitations). On average, whales are no better than a coin flip. The edge is
+conditional.
 
 | Action | Direction tested | 1h | 6h | 24h |
 |--------|-----------------|-----|-----|------|
-| Exchange deposit | Price dropped? | 49.5% | 49.3% | **50.5%*** |
-| Exchange withdrawal | Price rose? | **50.5%*** | 50.3% | 49.7%* |
-| DeFi interaction | Price rose? | **50.9%*** | **51.1%*** | **52.0%*** |
-
-\* p < 0.05, \*\* p < 0.01, \*\*\* p < 0.001
-
-On average, whales are no better than a coin flip. The edge is conditional.
+| Exchange deposit | Price dropped? | 49.5% | 49.3% | **50.5%** |
+| Exchange withdrawal | Price rose? | **50.5%** | 50.3% | 49.7% |
+| DeFi interaction | Price rose? | **50.9%** | **51.1%** | **52.0%** |
 
 ---
 
 ### 2. Conditioned on Sentiment Regime
 
-All results at 24h horizon, full dataset ($1M+ threshold).
+All results at 24h horizon, full dataset ($1M+ threshold). Hit rates are raw and
+not corrected for same-day clustering, so they are descriptive, not significance
+claims (see Limitations).
 
 #### Whale Withdrawals (buy signal), 24h
 
-| Condition | N | Hit Rate | p-value | Verdict |
-|-----------|---|----------|---------|---------|
-| Negative funding rate | 16,301 | **55.1%** | < 0.001 | Smart (but decaying) |
-| Extreme fear (FnG <= 25) | 19,208 | 50.7% | 0.058 | Random |
-| Fear (FnG 25 to 45) | 18,940 | 50.7% | 0.073 | Random |
-| Neutral (FnG 45 to 55) | 21,479 | 47.4% | < 0.001 | Wrong |
-| Greed (FnG 55 to 75) | 47,830 | **51.4%** | < 0.001 | Slightly smart |
-| Extreme greed (FnG > 75) | 17,226 | 45.6% | < 0.001 | Wrong |
-| Positive funding | 108,382 | 48.9% | < 0.001 | Wrong |
+| Condition | N | Hit Rate |
+|-----------|---|----------|
+| Negative funding rate | 16,301 | **55.1%** |
+| Extreme fear (FnG <= 25) | 19,208 | 50.7% |
+| Fear (FnG 25 to 45) | 18,940 | 50.7% |
+| Neutral (FnG 45 to 55) | 21,479 | 47.4% |
+| Greed (FnG 55 to 75) | 47,830 | **51.4%** |
+| Extreme greed (FnG > 75) | 17,226 | 45.6% |
+| Positive funding | 108,382 | 48.9% |
 
 #### Whale Deposits (sell signal), 24h
 
-| Condition | N | Hit Rate | p-value | Verdict |
-|-----------|---|----------|---------|---------|
-| Extreme greed (FnG > 75) | 22,038 | **54.4%** | < 0.001 | Smart |
-| Neutral (FnG 45 to 55) | 31,054 | **53.9%** | < 0.001 | Smart |
-| Fear (FnG 25 to 45) | 29,189 | **50.8%** | 0.010 | Slightly smart |
-| Extreme fear (FnG <= 25) | 29,203 | 49.7% | 0.380 | Random |
-| Greed (FnG 55 to 75) | 69,474 | 47.8% | < 0.001 | Wrong |
-| Negative funding rate | 24,531 | 45.7% | < 0.001 | Wrong |
-| Positive funding | 156,427 | **51.2%** | < 0.001 | Slightly smart |
+| Condition | N | Hit Rate |
+|-----------|---|----------|
+| Extreme greed (FnG > 75) | 22,038 | **54.4%** |
+| Neutral (FnG 45 to 55) | 31,054 | **53.9%** |
+| Fear (FnG 25 to 45) | 29,189 | **50.8%** |
+| Extreme fear (FnG <= 25) | 29,203 | 49.7% |
+| Greed (FnG 55 to 75) | 69,474 | 47.8% |
+| Negative funding rate | 24,531 | 45.7% |
+| Positive funding | 156,427 | **51.2%** |
 
 ---
 
