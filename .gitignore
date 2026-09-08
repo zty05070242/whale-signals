@@ -9,6 +9,14 @@ data/processed/
 # Curated reference tables are version-controlled even though they are CSVs
 !data/reference/*.csv
 
+# Compact published tables are generated from app/dashboard_data.json.
+!results/README.md
+!results/published_horizon_edges.csv
+!results/published_yearly_edges.csv
+!results/published_threshold_sensitivity.csv
+!results/published_bull_bear.csv
+!results/published_drawdown.csv
+
 # API keys
 .env
 config.local.py

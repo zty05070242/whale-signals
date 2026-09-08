@@ -200,6 +200,17 @@ name but GitHub's redirect keeps `git push` working.
 
 Update this section at the end of each working session.
 
+**2026-09-08**
+- Rewrote the English README from roughly 7,650 to 3,517 words, using restrained
+  claims and clarifying the limited, rule-labelled Random Forest evaluation.
+- Replaced the proposed full-rebuild workflow with simple environment, test and
+  dashboard instructions; the missing raw snapshot still prevents replication.
+- Added compact CSV extracts of `app/dashboard_data.json`, a short data guide,
+  Python 3.12 constraints, test requirements and a basic CI test workflow.
+- Trimmed tutorial-style comments without changing behaviour or calculations.
+- Verification: 105 tests passed and 10 provider-dependent tests were skipped.
+- No research calculations, runtime methodology or headline values changed.
+
 **2026-08-03**
 - Removed the ML model cross-check (Finding #4, old Section 7) from all
   three README languages. Not a data problem: the RF numbers (+2.0% to

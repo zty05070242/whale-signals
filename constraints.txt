@@ -1,0 +1,17 @@
+# Versions observed for direct project dependencies in .venv on 7 September
+# 2026. This is a constraints file, not a complete transitive lock.
+pandas==3.0.3
+numpy==2.4.6
+scipy==1.17.1
+requests==2.34.2
+praw==7.8.1
+scikit-learn==1.8.0
+xgboost==3.2.0
+vaderSentiment==3.3.2
+matplotlib==3.10.9
+seaborn==0.13.2
+plotly==6.7.0
+jupyter==1.1.1
+pytest==9.0.3
+black==26.5.1
+python-dotenv==1.2.2

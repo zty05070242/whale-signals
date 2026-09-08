@@ -31,12 +31,7 @@ import pandas as pd
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 
-# ---------------------------------------------------------------------------
-# Module-level analyser (instantiated once, reused across calls)
-# ---------------------------------------------------------------------------
-
-# SentimentIntensityAnalyzer loads the lexicon on init. Creating it once
-# avoids re-reading the dictionary file on every call.
+# Reuse the analyser so its lexicon is loaded only once.
 _analyser: Optional[SentimentIntensityAnalyzer] = None
 
 
@@ -47,10 +42,6 @@ def _get_analyser() -> SentimentIntensityAnalyzer:
         _analyser = SentimentIntensityAnalyzer()
     return _analyser
 
-
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
 
 def score_text(text: str) -> dict[str, float]:
     """
@@ -68,7 +59,6 @@ def score_text(text: str) -> dict[str, float]:
         compound ranges from -1.0 (most negative) to +1.0 (most positive).
     """
     analyser = _get_analyser()
-    # polarity_scores returns a dict with neg, neu, pos, compound keys
     return analyser.polarity_scores(text)
 
 
@@ -103,24 +93,16 @@ def score_dataframe(
 
     analyser = _get_analyser()
 
-    # Apply VADER to each row's text. fillna handles missing/NaN titles.
-    # .apply() runs a function on each element of a Series — slower than
-    # vectorised operations but VADER has no vectorised interface.
+    # VADER has no vectorised interface; missing titles are treated as empty.
     texts = df[text_column].fillna("")
     scores = texts.apply(analyser.polarity_scores)
 
-    # pd.json_normalize converts a Series of dicts into a DataFrame
-    # with one column per dict key (neg, neu, pos, compound)
     score_df = pd.json_normalize(scores)
 
-    # Prefix columns to make their origin clear
     score_df.columns = [f"vader_{col}" for col in score_df.columns]
 
-    # Reset index to align with df (apply preserves the original index,
-    # but concat needs them to match)
     score_df.index = df.index
 
-    # pd.concat with axis=1 joins DataFrames column-wise (side by side)
     df = pd.concat([df, score_df], axis=1)
 
     return df

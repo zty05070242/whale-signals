@@ -67,9 +67,7 @@ def assign_transaction_label(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.copy()
 
-    # np.select applies conditions in order and returns the first matching value.
-    # This is the vectorised equivalent of an if-elif chain — much faster than
-    # iterating row by row with .apply().
+    # Rule order is significant: the first matching category wins.
     conditions = [
         df["to_category"] == "exchange",                           # rule 1: deposit
         df["from_category"] == "exchange",                         # rule 2: withdrawal
@@ -77,7 +75,6 @@ def assign_transaction_label(df: pd.DataFrame) -> pd.DataFrame:
     ]
     choices = [EXCHANGE_DEPOSIT, EXCHANGE_WITHDRAWAL, DEFI_INTERACTION]
 
-    # default= is returned when no condition matches (both sides unknown)
     df["tx_category"] = np.select(conditions, choices, default=WALLET_TO_WALLET)
 
     return df
@@ -123,8 +120,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.copy()
 
-    # --- Ensure timestamp is datetime for time-based features ---
-    # pd.to_datetime converts string timestamps to datetime objects
+    # Normalise timestamps before deriving calendar and history features.
     df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"], utc=True)
 
     # --- Log-transformed value features ---
@@ -137,7 +133,6 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     df["log_gas_used"] = np.log10(np.clip(df["gas_used"], a_min=1.0, a_max=None))
 
     # --- Time features ---
-    # .dt accessor exposes datetime properties on a pandas Series
     df["hour_of_day"] = df["timestamp_utc"].dt.hour
     # Monday=0, Sunday=6 — matches Python's datetime.weekday() convention
     df["day_of_week"] = df["timestamp_utc"].dt.weekday
@@ -191,11 +186,7 @@ def _compute_sender_prior_tx_count(df: pd.DataFrame) -> pd.DataFrame:
     # Sort by timestamp so cumcount reflects temporal order
     df = df.sort_values("timestamp_utc").reset_index(drop=True)
 
-    # groupby('from_address').cumcount() assigns a running count within each group:
-    #   first tx by address X -> 0 (no prior transactions)
-    #   second tx by address X -> 1 (one prior transaction)
-    #   third tx by address X -> 2 (two prior transactions)
-    # This is inherently look-ahead-safe because it counts only preceding rows.
+    # Temporal sorting makes cumcount the number of prior, never future, events.
     df["sender_prior_tx_count"] = df.groupby("from_address").cumcount()
 
     return df

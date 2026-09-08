@@ -121,11 +121,8 @@ def save_whale_transactions(
     if output_path is None:
         output_path = config.PROCESSED_DATA_DIR / "whale_txs.csv"
 
-    # mkdir with parents=True creates intermediate directories if they do not exist.
-    # exist_ok=True means no error if the directory already exists.
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # index=False prevents pandas from writing the integer row index as a column
     df.to_csv(output_path, index=False)
     print(f"Saved {len(df):,} whale transactions to {output_path}")
 
@@ -185,20 +182,15 @@ def _parse_types(df: pd.DataFrame) -> pd.DataFrame:
     """
     df = df.copy()  # avoid mutating the input; makes function behaviour predictable
 
-    # pd.to_datetime parses ISO 8601 strings into timezone-aware Timestamp objects.
-    # utc=True ensures the result is always UTC, not timezone-naive — important when
-    # later joining with Reddit/news data which may come from different time zones.
+    # Force UTC before joining sources that may use different time zones.
     df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"], utc=True)
 
-    # Floating-point columns — errors="coerce" replaces unparseable values with NaN
-    # rather than raising an exception, so one bad row does not abort the whole load.
+    # Preserve the load when a provider returns an unparseable numeric value.
     float_cols = ("eth_value", "usd_value", "eth_usd_price", "gas_price_gwei", "tx_fee_eth")
     for col in float_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    # Integer columns — Int64 (capital I) is pandas' nullable integer type.
-    # Standard int64 cannot represent NaN; Int64 can. This matters if Dune ever
-    # returns a row with a missing block_number or gas_used.
+    # Nullable integers preserve missing provider values.
     int_cols = ("block_number", "gas_used")
     for col in int_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")

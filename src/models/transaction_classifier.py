@@ -124,10 +124,6 @@ def train_classifier(
     X_train = train_df[feature_columns]
     y_train = train_df["tx_category"]
 
-    # RandomForestClassifier fits an ensemble of decision trees.
-    # Each tree sees a random subset of rows (bootstrap) and features,
-    # then the forest averages their votes — reducing overfitting vs a
-    # single decision tree.
     clf = RandomForestClassifier(
         n_estimators=n_estimators,
         class_weight=class_weight,
@@ -135,7 +131,6 @@ def train_classifier(
         n_jobs=-1,  # use all CPU cores for parallel tree fitting
     )
 
-    # .fit() trains the model: learns decision boundaries from X_train -> y_train
     clf.fit(X_train, y_train)
 
     return clf
@@ -174,33 +169,23 @@ def evaluate_classifier(
     X_test = test_df[feature_columns]
     y_test = test_df["tx_category"]
 
-    # .predict() returns the class with the highest vote across all trees
     y_pred = clf.predict(X_test)
 
-    # .predict_proba() returns probability estimates for each class.
-    # Each row sums to 1.0 — e.g. [0.1, 0.7, 0.05, 0.15] means the model
-    # is 70% confident this is the second class.
     y_proba = clf.predict_proba(X_test)
 
-    # clf.score() computes accuracy: fraction of predictions that match y_test
     accuracy = clf.score(X_test, y_test)
 
-    # classification_report produces precision, recall, F1 per class — more
-    # informative than accuracy alone, especially with imbalanced classes
+    # Per-class metrics expose errors hidden by accuracy on imbalanced classes.
     report = classification_report(y_test, y_pred, zero_division=0)
 
-    # confusion_matrix[i, j] = number of samples with true label i predicted as j
     cm = confusion_matrix(y_test, y_pred, labels=clf.classes_)
 
-    # feature_importances_ measures how much each feature contributes to the
-    # forest's decisions (Gini importance). Higher = more influential.
     importances = dict(zip(feature_columns, clf.feature_importances_))
 
     print(f"Accuracy: {accuracy:.3f}")
     print()
     print(report)
     print("Feature importances (Gini):")
-    # sorted() with key= sorts by importance descending
     for feat, imp in sorted(importances.items(), key=lambda x: x[1], reverse=True):
         print(f"  {feat:30s} {imp:.4f}")
 
@@ -254,9 +239,6 @@ def predict_unlabelled(
 
     df["predicted_category"] = clf.predict(X)
 
-    # predict_proba returns an array of shape (n_samples, n_classes).
-    # np.max across axis=1 gives the highest probability for each row —
-    # i.e. the model's confidence in its best guess.
     proba = clf.predict_proba(X)
     df["prediction_confidence"] = np.max(proba, axis=1)
 

@@ -1,0 +1,10 @@
+# Minimal dependencies imported by the unit tests and their target modules.
+pandas
+numpy
+scipy
+requests
+praw
+scikit-learn
+vaderSentiment
+python-dotenv
+pytest
