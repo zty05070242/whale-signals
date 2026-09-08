@@ -1,5 +1,7 @@
 # Ethereum whale signals: exchange direction matters more than transaction size
 
+**Languages:** English | [繁體中文](README.zh-Hant.md) | [简体中文](README.zh-Hans.md)
+
 Large Ethereum transfers are weak signals when treated as one undifferentiated
 group. Once I separate transfers by their direction relative to labelled
 exchanges, however, a measurable asymmetry appears: deposits are followed by

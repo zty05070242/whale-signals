@@ -201,8 +201,9 @@ name but GitHub's redirect keeps `git push` working.
 Update this section at the end of each working session.
 
 **2026-09-08**
-- Rewrote the English README from roughly 7,650 to 3,517 words, using restrained
-  claims and clarifying the limited, rule-labelled Random Forest evaluation.
+- Rewrote the English, Traditional Chinese and Simplified Chinese READMEs with
+  the same restrained framing, while keeping the exchange-flow findings clear
+  and clarifying the limited, rule-labelled Random Forest evaluation.
 - Replaced the proposed full-rebuild workflow with simple environment, test and
   dashboard instructions; the missing raw snapshot still prevents replication.
 - Added compact CSV extracts of `app/dashboard_data.json`, a short data guide,
