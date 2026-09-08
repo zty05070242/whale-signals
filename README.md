@@ -1,9 +1,10 @@
-# Ethereum whale transfers and subsequent ETH returns
+# Ethereum whale signals: exchange direction matters more than transaction size
 
-This project tests a common claim in crypto markets: that large transfers into
-and out of exchanges contain information about future ETH prices. I use an
-event study rather than treating every on-chain feature as an input to a single
-price-prediction model.
+Large Ethereum transfers are weak signals when treated as one undifferentiated
+group. Once I separate transfers by their direction relative to labelled
+exchanges, however, a measurable asymmetry appears: deposits are followed by
+slightly more downside than the matched market base rate, while withdrawals do
+not retain a stable positive association through the later sample.
 
 The analysed dataset contains 646,442 successful, top-level Ethereum
 transactions above $1 million from January 2023 to July 2026. Transfers are
@@ -11,17 +12,26 @@ classified from known address labels, joined to hourly ETH prices and two
 market-sentiment measures, and compared with the return direction from all
 eligible hours under the same conditions.
 
-The clearest descriptive result is an asymmetry. Exchange deposits have a small
-negative-price association at 24 hours: a 50.45% hit rate and a 1.33 percentage
-point edge over the matched base rate. The measured difference is larger at
-longer horizons, reaching 12.44 points at six months, but those estimates are
-much less reliable because thousands of events share the same future price
-windows. Exchange withdrawals do not show a stable positive-price association
-in the later part of the sample.
+## What I found
+
+- **Exchange deposits contain a modest, repeatable signal.** At 24 hours they
+  precede downside 50.45% of the time, a +1.33 percentage-point difference from
+  the matched downward base rate. The result is similar from $1M to $10M and
+  becomes larger in the 2024, 2025 and partial-2026 yearly samples.
+- **The useful withdrawal condition did not persist.** Withdrawals during
+  negative funding had a +4.71 point edge in 2023 and +10.12 points in 2024,
+  then fell to +0.07 in 2025 and -3.92 in the partial 2026 sample.
+- **The deposit association is larger at long horizons, but harder to infer
+  from.** It reaches +12.44 points at six months, where overlapping event
+  windows sharply reduce the independent information. Maximum adverse
+  excursion also shows that deposits ending in downside often moved
+  substantially in the opposite direction first.
 
 These are associations, not proof that a transfer caused a price move or that
-the owner intended to trade. The analysis is not a live or costed trading
-strategy.
+the owner intended to trade. Exchange direction is a proxy, and the analysis is
+not a live or costed trading strategy. Within those limits, the result is not
+that whales contain no information; it is that transaction size alone is less
+useful than where the transaction is going.
 
 **Live dashboard:**
 [crypto-whale-signals-and-sentiment.streamlit.app](https://crypto-whale-signals-and-sentiment-lkhygb3594bbrogn23qbps.streamlit.app/)
@@ -184,16 +194,17 @@ parameters. That makes 2026 a useful later-sample check. It is only a partial
 year, shares the same address-labelling and analysis choices, and does not
 provide absolute confirmation.
 
-## Results
+## Results: an asymmetric exchange-flow signal
 
 All values below come from the committed files described in
 [`results/README.md`](results/README.md). Percentage-point differences are
 shown as `pp`.
 
-### Deposit association by horizon
+### Deposits show a modest 24-hour association and a larger long-horizon difference
 
-At the $1M threshold, the unconditional exchange-deposit edge is small at short
-horizons and larger at the longest measured horizons.
+At the $1M threshold, labelled exchange deposits produce a +1.33 point
+difference at 24 hours. The difference is similar at three days and one week,
+then grows across the longer measured horizons.
 
 | Horizon | Deposit edge vs matched base rate |
 |---|---:|
@@ -212,15 +223,15 @@ Source: [`results/published_horizon_edges.csv`](results/published_horizon_edges.
 49.12% matched downward base rate. The difference is 1.33 points.
 
 **Interpretation:** within this sample, labelled exchange deposits precede
-declines slightly more often than all eligible hours. The association is not
-visible at 6 hours and becomes larger as the return window expands.
+declines modestly more often than all eligible hours. The result is absent at 6
+hours and becomes larger as the return window expands.
 
 **Caution:** the increasing numbers do not show that depositors forecast six
-months ahead. Long windows repeatedly count the same market moves, so their
-effective sample size is far below the event-row count. The table is a
-descriptive horizon comparison, not evidence of monotonic causal impact.
+months ahead. Long windows repeatedly count the same market moves, so the
+event-row count overstates the independent information available. The table is
+a descriptive horizon comparison, not evidence of monotonic causal impact.
 
-### Calendar-year comparison
+### Withdrawals lose their early conditional association
 
 The 24-hour year split contrasts unconditional deposits with withdrawals made
 during negative funding, the withdrawal condition that looked strongest early
@@ -239,10 +250,11 @@ Source: [`results/published_yearly_edges.csv`](results/published_yearly_edges.cs
 in the partial 2026 sample. The negative-funding withdrawal difference is
 positive in 2023–2024, approximately zero in 2025, and negative in 2026.
 
-**Interpretation:** the simple “withdrawal means bullish accumulation” proxy is
-not stable across the observed years. The later deposit result is more
-consistent at 24 hours, but the sample does not establish that the trend will
-continue.
+**Interpretation:** the negative-funding withdrawal condition identified a
+sizeable positive association in 2023–2024, but it did not survive into the
+later years. By comparison, the deposit result is positive and increases from
+2024 through the partial 2026 sample. The sample does not establish that either
+pattern will continue.
 
 **Untested hypothesis:** staking, liquidity provision, bridging and custody
 reorganisation may have changed what exchange withdrawals represent. This
@@ -250,7 +262,7 @@ project does not trace post-withdrawal destinations, so it cannot identify that
 mechanism. The threshold results rule out only the narrow claim that the change
 appears solely below $10M; they do not prove a DeFi explanation.
 
-### Transaction-size sensitivity
+### The deposit result is similar from $1M to $10M
 
 Unconditional deposits have similar 24-hour differences at the four main size
 cuts:
@@ -274,7 +286,7 @@ The threshold itself changes economic meaning over time. A fixed $1M represents
 fewer ETH when ETH is expensive, so yearly comparisons mix changes in market
 behaviour with changes in the population admitted by the filter.
 
-### Sentiment conditioning
+### Market conditions change the raw hit rate
 
 At 24 hours and $1M+, deposits during extreme greed have a 54.43% hit rate. The
 matched downward base rate during extreme greed is 51.78%, leaving a +2.65
@@ -287,7 +299,7 @@ where the same price direction is already common. The market-derived variables
 are useful here as controls and grouping variables; the results do not show
 that sentiment causes the subsequent move.
 
-### Bull and bear periods
+### The deposit difference is larger in rule-defined bear periods
 
 At a one-week horizon, the deposit difference is larger in the rule-defined
 bear periods at all four thresholds. The withdrawal difference is negative in
@@ -307,7 +319,7 @@ and declining markets. However, these regimes are constructed from the same
 price path being evaluated, and event windows still overlap. The table should
 be treated as a conditional description rather than a tradable regime model.
 
-### Path risk for deposit events
+### Long-horizon deposit outcomes include substantial path risk
 
 For deposit events that end with a negative return, maximum adverse excursion
 (MAE) records the largest interim price rise before the horizon ends. It
@@ -328,7 +340,7 @@ outcome, ignores transaction costs and execution delay, and does not simulate a
 stop-loss. Its purpose is narrower: endpoint accuracy can conceal substantial
 interim movement in the opposite direction.
 
-### The withdrawn 78.3% result
+### Why I withdrew the 78.3% result
 
 An earlier version reported a 78.3% hit rate for $10M+ deposits during extreme
 greed. The arithmetic was real, but the events were concentrated in ten
@@ -340,6 +352,19 @@ This is the clearest example of why transaction count is not independent sample
 size. A future version should collapse clustered events, use calendar-time
 portfolios, or apply an event-study correction designed for cross-sectional
 dependence before making inferential claims.
+
+## Bottom line
+
+Generic whale alerts are weak because transaction size does not say what the
+transfer represents. The most repeatable signal in this study is the direction
+of funds relative to labelled exchanges: deposits have a modest negative-price
+association at 24 hours that is similar across size thresholds and stronger in
+the later yearly samples. The early positive association for withdrawals during
+negative funding disappears and reverses by the partial 2026 sample.
+
+That is a useful narrowing of the original claim, not a claim that whales
+reliably predict prices. The next step is dependence-robust validation of the
+event study, followed by a live test with fixed labels and execution rules.
 
 ## Limitations
 
@@ -495,15 +520,3 @@ whale_signals/
 │   └── sentiment/                   # VADER scoring and aggregation
 └── tests/                            # transformation and pipeline tests
 ```
-
-## Current conclusion
-
-The data support a restrained claim: labelled exchange deposits are associated
-with slightly more subsequent downside than the matched market base rate at 24
-hours, while the analogous withdrawal proxy is unstable across years. Larger
-differences appear at long horizons and in some market regimes, but overlapping
-events prevent treating their row counts as independent evidence.
-
-The next methodological step is not a more elaborate prediction model. It is a
-dependence-aware event study with historically versioned labels and trace data
-that follows where assets go after an exchange transfer.
