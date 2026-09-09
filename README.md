@@ -1,4 +1,4 @@
-# Ethereum whale signals: exchange direction matters more than transaction size
+# Are Ethereum Whales Smart Money? An Event Study of On-Chain Signals and Sentiment
 
 **Languages:** English | [繁體中文](README.zh-Hant.md) | [简体中文](README.zh-Hans.md)
 
