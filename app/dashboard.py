@@ -202,25 +202,36 @@ st.markdown(
     'do large on-chain moves predict ETH direction?</div>',
     unsafe_allow_html=True,
 )
+st.markdown(
+    f"<span style='color:{GREEN};font-family:{MONO};font-weight:700'>"
+    "ANSWER // EXCHANGE DIRECTION CONTAINS THE SIGNAL: DEPOSITS PRECEDE "
+    "MORE DOWNSIDE; THE EARLY WITHDRAWAL EDGE FADES.</span>",
+    unsafe_allow_html=True,
+)
 st.markdown('<hr class="term-rule">', unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns(3)
-col1.metric("Transactions", f"{B['n_filtered']:,}")
-col2.metric("Data Span", "3.5 Years",
-            help=f"{META['date_min']} to {META['date_max']}")
-col3.metric("Classifier Accuracy", f"{META['classifier_accuracy']:.1f}%",
-            help="Phase 2 wallet-category classifier (Random Forest), "
-                 "time-based hold-out. See scripts/run_phase2_classifier_eval.py.")
+headline_dep_24h = z(B["deposit_edge_by_horizon"][HORIZON_LABELS.index("24h")])
+headline_dep_6m = z(B["deposit_edge_by_horizon"][HORIZON_LABELS.index("6m")])
+headline_dep_2026 = z(B["yearly"]["24h"]["deposit_edge"]["2026"])
+
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("24h Deposit Edge", f"{headline_dep_24h:+.1f} pp",
+            help="Deposit hit rate minus the matched downward base rate.")
+col2.metric("2026 Deposit Edge", f"{headline_dep_2026:+.1f} pp",
+            help="Partial-year 2026 sample at the 24-hour horizon.")
+col3.metric("6m Association", f"{headline_dep_6m:+.1f} pp",
+            help="Descriptive only: long event windows overlap heavily.")
+col4.metric("Transactions", f"{B['n_filtered']:,}")
 
 # ---------------------------------------------------------------------------
 # Section 1: Deposit edge across horizons
 # ---------------------------------------------------------------------------
 
-st.header("01 // Deposit edge grows with horizon")
+st.header("01 // Deposit signal strengthens across horizons")
 st.markdown(
-    f"<span style='color:{MUTED}'>Whale sellers are not day-trading. The edge "
-    "is thin at 24h but compounds out to months. They appear to price in "
-    "structural shifts well ahead of the market.</span>",
+    f"<span style='color:{MUTED}'>The deposit association is +1.3pp at 24h "
+    "and becomes larger across longer windows. Treat the longest horizons as "
+    "descriptive because many events share the same future price path.</span>",
     unsafe_allow_html=True,
 )
 
@@ -242,14 +253,14 @@ fig1.update_layout(
 st.plotly_chart(style_fig(fig1), width='stretch')
 
 # ---------------------------------------------------------------------------
-# Section 2: Yearly stability (alpha decay)
+# Section 2: Yearly stability
 # ---------------------------------------------------------------------------
 
-st.header("02 // Yearly stability: alpha decay")
+st.header("02 // Deposits strengthen; withdrawals fade")
 st.markdown(
-    f"<span style='color:{MUTED}'>Each year tested independently. The "
-    "withdrawal buy-signal died after 2024. The deposit sell-signal emerged in "
-    "2024 and strengthened into 2026 (out-of-sample).</span>",
+    f"<span style='color:{MUTED}'>The yearly samples reveal the central "
+    "asymmetry: the deposit edge becomes positive after 2023, while the early "
+    "negative-funding withdrawal edge disappears in 2025–2026.</span>",
     unsafe_allow_html=True,
 )
 
@@ -279,14 +290,14 @@ Y = B["yearly"][horizon]
 with tab_dep_yr:
     yearly_bar(Y["deposit_edge"],
                f"DEPOSIT EDGE BY YEAR ({horizon}, unconditional)",
-               "Deposit edge grew from roughly flat in 2023 to a clear positive edge by 2026 (out-of-sample) "
+               "Deposit edge moved from roughly flat in 2023 to positive in the partial 2026 later sample "
                "at short horizons. Zero bars mean too few observations at this horizon/threshold to trust "
                "(e.g. long horizons run out of forward data near the end of the dataset).")
 
 with tab_wd_yr:
     yearly_bar(Y["withdrawal_edge_negfund"],
                f"WITHDRAWAL EDGE BY YEAR ({horizon}, negative funding)",
-               "Withdrawal edge peaked around 2024, then collapsed. Zero bars mean too few observations "
+               "Withdrawal edge was strongest around 2024, then faded. Zero bars mean too few observations "
                "at this horizon/threshold to trust.")
 
 # ---------------------------------------------------------------------------
@@ -296,8 +307,8 @@ with tab_wd_yr:
 st.header("03 // Threshold sensitivity")
 st.markdown(
     rf"<span style='color:{MUTED}'>As ETH rose from ~\$1,200 to ~\$4,000+, a \$1M "
-    "transaction is fewer ETH and less conviction. Do larger tickets carry a "
-    "stronger signal?</span>",
+    "threshold represented progressively fewer ETH. Does the measured result "
+    "persist when only larger transfers are retained?</span>",
     unsafe_allow_html=True,
 )
 
@@ -430,7 +441,7 @@ if RD:
     )
     st.plotly_chart(style_fig(fig_hist), width='stretch')
     st.caption(
-        "A hit = price fell within 24h (the correct call for a sell signal). "
+        "A hit = price fell within 24h (the deposit-implied direction). "
         "Avg Return (all) blends hits and misses: a small directional tilt nets "
         "to a small average because up-moves and down-moves are similar in size."
     )
@@ -441,12 +452,11 @@ else:
 # Section 6: Asymmetry
 # ---------------------------------------------------------------------------
 
-st.header("06 // The asymmetry: deposits won, withdrawals lost")
+st.header("06 // The central asymmetry")
 st.markdown(
-    f"<span style='color:{MUTED}'>Withdrawal edge peaked early then collapsed. "
-    "Deposit edge was absent early then grew. One possible reading: whale-watching "
-    "tools broadcast buy signals far more than sell signals, leaving the deposit "
-    "edge un-arbitraged. Plausible, not proven.</span>",
+    f"<span style='color:{MUTED}'>Deposit and withdrawal flows do not behave "
+    "as one generic whale signal. Deposit edge strengthens in later samples; "
+    "withdrawal edge weakens and turns negative.</span>",
     unsafe_allow_html=True,
 )
 
@@ -470,15 +480,15 @@ fig_asym.update_layout(
 st.plotly_chart(style_fig(fig_asym), width='stretch')
 
 # ---------------------------------------------------------------------------
-# Section 7: Signal timeline (when it fires, when it pays)
+# Section 7: Signal timeline
 # ---------------------------------------------------------------------------
 
-st.header("07 // When the signal fires, and when it pays")
+st.header("07 // When the deposit signal appears")
 st.markdown(
     f"<span style='color:{MUTED}'>Monthly view of the deposit (sell) signal at "
     "the base \\$1M+ threshold. Top: ETH price, with bear markets shaded. "
     "Bottom: how many deposits fired each month, and whether that month's 24h "
-    "calls beat the month's own base rate. The edge is not spread evenly "
+    "hit rate exceeded the month's own base rate. The edge is not spread evenly "
     "through time; it clusters.</span>",
     unsafe_allow_html=True,
 )
@@ -551,8 +561,7 @@ st.markdown(
     f"definition, not tuned: {BB['hours']['bull']:,} bull hours vs "
     f"{BB['hours']['bear']:,} bear hours across {len(BB['segments'])} "
     "segments. Deposit edge is stronger in bear markets at every size tested; "
-    "withdrawals get more wrong exactly when buying conviction should matter "
-    "most.</span>",
+    "the withdrawal difference is also more negative in bear periods.</span>",
     unsafe_allow_html=True,
 )
 
@@ -593,23 +602,21 @@ with tab_bb_wd:
 
 st.caption(
     "Bar colour = market regime (green bull, red bear), not good/bad: for "
-    "deposits, the taller bear bars are the finding. Raw p-values, uncorrected "
-    "for overlapping observations; the short horizons keep the overstatement "
-    "milder than the long-horizon claims that failed (see README Section 9)."
+    "deposits, the taller bear bars are the finding. Event windows still "
+    "overlap, so read these as conditional differences rather than independent "
+    "trading opportunities (see the README limitations)."
 )
 
 # ---------------------------------------------------------------------------
-# Section 9: Drawdown before the payoff (MAE)
+# Section 9: Path risk (MAE)
 # ---------------------------------------------------------------------------
 
-st.header("09 // Drawdown before the payoff")
+st.header("09 // Correct direction does not mean an easy path")
 st.markdown(
     f"<span style='color:{MUTED}'>Long-horizon returns only report the "
-    "endpoint. Maximum adverse excursion (MAE) is the worst unrealised loss a "
-    "trader following the sell signal would have marked-to-market along the "
-    "way, computed from the full hourly price path. Shown for trades where the "
-    "signal was EVENTUALLY RIGHT; being right does not mean it was "
-    "survivable.</span>",
+    "endpoint. Maximum adverse excursion (MAE) measures the largest interim "
+    "price rise against the deposit-implied direction, using the hourly price "
+    "path for events that ultimately ended lower.</span>",
     unsafe_allow_html=True,
 )
 
@@ -618,7 +625,7 @@ tab_dd_u, tab_dd_g = st.tabs(["UNCONDITIONAL", "EXTREME GREED"])
 
 
 def mae_chart(condition: str):
-    """Median / mean / P90 MAE bars by horizon, eventually-correct trades."""
+    """Median, mean and P90 MAE for deposits that ultimately ended lower."""
     rows = {r["horizon"]: r for r in DD["rows"]
             if r["condition"] == condition and r["outcome"] == "hit"}
     hs = [h for h in DD["horizons"] if h in rows]
@@ -633,7 +640,7 @@ def mae_chart(condition: str):
             textposition="outside", textfont=dict(family=MONO, size=10, color=TEXT),
         ))
     fig.update_layout(
-        title=f"MAE ON EVENTUALLY-CORRECT DEPOSIT TRADES ({condition.upper()})",
+        title=f"MAE FOR DEPOSITS THAT ULTIMATELY ENDED LOWER ({condition.upper()})",
         xaxis_title="HOLDING HORIZON", yaxis_title="ADVERSE MOVE (%)",
         barmode="group",
     )
@@ -641,12 +648,11 @@ def mae_chart(condition: str):
     six = rows.get("6m")
     if six:
         st.caption(
-            f"At 6 months ({condition}), an eventually-correct trade endured a "
-            f"{z(six['mean_mae']):.1f}% adverse move on average before paying "
-            f"off; the worst decile endured {z(six['p90_mae']):.1f}%. "
-            "Eventually-WRONG trades are worse on both counts (unconditional "
-            "6-month misses averaged 80.1% MAE). No stop-loss rule is "
-            "simulated; MAE is the pain, not a strategy."
+            f"At 6 months ({condition}), deposits that ultimately ended lower "
+            f"first saw a {z(six['mean_mae']):.1f}% adverse move on average; "
+            f"the worst decile saw {z(six['p90_mae']):.1f}%. Deposits that "
+            "ended higher had still larger adverse moves. No stop-loss or "
+            "implementable trading strategy is simulated."
         )
 
 
@@ -663,8 +669,8 @@ with tab_dd_g:
 st.header("10 // Limitations")
 st.markdown(r"""
 1. **Backtested, not live-tested.** Past results do not guarantee future ones.
-2. **Modest at short horizons.** A +1 to +4pp edge at 24h is statistically
-   significant but economically marginal after costs and slippage.
+2. **Modest at short horizons.** The 24h differences are measured in a few
+   percentage points, and no costs or execution rules are modelled.
 3. **Long-horizon windows overlap.** At 1 month+, thousands of events measure the
    same price move. Hit rates are informative but p-values overstate significance.
 4. **No stop-loss modelling.** Long-horizon results assume holding to maturity.
@@ -672,8 +678,8 @@ st.markdown(r"""
    rule is simulated.
 5. **Fixed USD threshold ignores ETH price growth.** \$1M was ~833 ETH in 2023
    but only ~250 ETH in 2026, diluting the pool with smaller actors over time.
-6. **The withdrawal signal is dead.** Any strategy built on whale withdrawals
-   would have failed in 2025-2026.
+6. **The withdrawal relationship is not stable.** Its early conditional edge
+   disappears in 2025-2026, so it should not be treated as a persistent signal.
 """)
 
 st.markdown('<hr class="term-rule">', unsafe_allow_html=True)

@@ -200,6 +200,12 @@ name but GitHub's redirect keeps `git push` working.
 
 Update this section at the end of each working session.
 
+**2026-09-09**
+- Strengthened the dashboard presentation without changing calculations: the
+  opening now answers the research question, the KPI cards lead with deposit
+  results, and speculative or overly theatrical captions were replaced with
+  measured claims consistent with the READMEs.
+
 **2026-09-08**
 - Rewrote the English, Traditional Chinese and Simplified Chinese READMEs with
   the same restrained framing, while keeping the exchange-flow findings clear
