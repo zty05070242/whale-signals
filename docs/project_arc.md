@@ -200,6 +200,17 @@ name but GitHub's redirect keeps `git push` working.
 
 Update this section at the end of each working session.
 
+**2026-09-15**
+- Reframed the English README around its strongest supported result: labelled
+  exchange deposits show a +1.33 percentage-point downside edge at 24 hours.
+- Moved threshold stability and the later-sample check directly behind the
+  headline result; retained long-horizon values as descriptive secondary
+  evidence because overlapping return windows limit inference.
+- Removed the withdrawn 78.3% result from the main results sequence, consolidated
+  repeated caveats into four research boundaries, and moved the separate Random
+  Forest prototype to a supporting role. No calculations or published values
+  changed.
+
 **2026-09-09**
 - Strengthened the dashboard presentation without changing calculations: the
   opening now answers the research question, the KPI cards lead with deposit
