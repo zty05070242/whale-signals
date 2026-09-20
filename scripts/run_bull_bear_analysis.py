@@ -38,15 +38,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 from scipy import stats  # noqa: E402
 
 import config  # noqa: E402
-from src.features.feature_engineer import assign_transaction_label  # noqa: E402
+from src.analysis.panel import (  # noqa: E402
+    build_analysis_panel,
+    forward_return_column,
+)
+from src.analysis.regimes import compute_regime  # noqa: E402
 
 HORIZONS_H = [24, 72, 168]
 HORIZON_LABELS = ["24h", "3d", "1w"]
+HORIZON_HOURS = dict(zip(HORIZON_LABELS, HORIZONS_H))
 # The sentiment-conditioned test (regime x sentiment x category) showed sign
 # flips across horizons -- a symptom of noise from stacking three conditions
 # on already-smaller samples. Testing shorter horizons only (1d/3d/5d, no 1w)
@@ -54,41 +58,14 @@ HORIZON_LABELS = ["24h", "3d", "1w"]
 # throughout.
 SENTIMENT_HORIZONS_H = [24, 72, 120]
 SENTIMENT_HORIZON_LABELS = ["24h", "3d", "5d"]
+SENTIMENT_HORIZON_HOURS = dict(
+    zip(SENTIMENT_HORIZON_LABELS, SENTIMENT_HORIZONS_H)
+)
 THRESHOLDS = [1_000_000, 2_000_000, 5_000_000, 10_000_000]
 MIN_N = 30
 
 
-def compute_regime(prices: pd.DataFrame) -> pd.Series:
-    """Classic 20% drawdown/rally state machine. Returns 'bull' or 'bear' per row.
-
-    Starts assuming a bull regime (arbitrary, but only affects the label for
-    the first few hours before the first real peak/trough is established).
-    """
-    close = prices["close"].values
-    n = len(close)
-    regime = np.empty(n, dtype=object)
-    state = "bull"
-    peak = close[0]
-    trough = close[0]
-
-    for i in range(n):
-        price = close[i]
-        if state == "bull":
-            peak = max(peak, price)
-            if price <= peak * 0.80:
-                state = "bear"
-                trough = price
-        else:
-            trough = min(trough, price)
-            if price >= trough * 1.20:
-                state = "bull"
-                peak = price
-        regime[i] = state
-
-    return pd.Series(regime, index=prices.index)
-
-
-def load_data():
+def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Load whale transactions and hourly prices, with regime, sentiment, and
     forward returns attached.
     """
@@ -97,76 +74,36 @@ def load_data():
     fng = pd.read_csv(config.PROCESSED_DATA_DIR / "fear_greed_daily.csv")
     funding = pd.read_csv(config.PROCESSED_DATA_DIR / "eth_funding_rate.csv")
 
-    whale["timestamp_utc"] = pd.to_datetime(whale["timestamp_utc"], utc=True)
-    prices["timestamp_utc"] = pd.to_datetime(prices["timestamp_utc"], utc=True)
-    fng["date"] = pd.to_datetime(fng["date"], utc=True)
-    funding["timestamp_utc"] = pd.to_datetime(funding["timestamp_utc"], utc=True, format="ISO8601")
-    whale = assign_transaction_label(whale)
-    whale["hour_utc"] = whale["timestamp_utc"].dt.floor("h")
-
+    prices["timestamp_utc"] = pd.to_datetime(
+        prices["timestamp_utc"], utc=True
+    )  # create a complete calendar-hour grid before row-based regime analysis
     prices = prices.sort_values("timestamp_utc").reset_index(drop=True)
     full_index = pd.date_range(
         prices["timestamp_utc"].min(), prices["timestamp_utc"].max(), freq="h", tz="UTC",
     )
-    # Gap-filled hourly close (the raw feed has one missing hour)
-    price_series = prices.set_index("timestamp_utc")["close"].reindex(full_index).ffill()
-    price_df = pd.DataFrame({"close": price_series}).reset_index(names="timestamp_utc")
+    price_series = (
+        prices.set_index("timestamp_utc")["close"]
+        .reindex(full_index)
+        .ffill()
+    )  # the known missing candle must not change a row-count-based horizon
+    filled_prices = pd.DataFrame({"close": price_series}).reset_index(
+        names="timestamp_utc"
+    )
+
+    all_horizons = sorted(set(HORIZONS_H + SENTIMENT_HORIZONS_H))
+    whale, price_df = build_analysis_panel(
+        whale,
+        filled_prices,
+        fng,
+        funding,
+        all_horizons,
+    )
+    price_df = price_df.sort_values("timestamp_utc").reset_index(
+        drop=True
+    )  # the state machine must see candles in strict chronological order
     price_df["regime"] = compute_regime(price_df)
-
-    # Union of both horizon sets, so both the main test and the sentiment-
-    # conditioned test can pull whichever forward-return columns they need.
-    all_horizons = dict(zip(HORIZONS_H, HORIZON_LABELS))
-    all_horizons.update(zip(SENTIMENT_HORIZONS_H, SENTIMENT_HORIZON_LABELS))
-
-    for h, label in all_horizons.items():
-        fut = price_series.shift(-h)
-        price_df[f"fwd_{label}"] = (
-            (fut.values - price_df["close"].values) / price_df["close"].values
-        )
-
-    # Fear & Greed (daily) and funding rate (8-hourly), merged onto both the
-    # whale transactions and the full hourly price series (for base rates),
-    # matching the pattern used throughout this project.
-    fng_m = fng.rename(columns={"date": "_date"}).sort_values("_date")
-    price_df["_date"] = price_df["timestamp_utc"].dt.floor("D")
-    price_df = pd.merge_asof(
-        price_df.sort_values("_date"), fng_m[["_date", "fng_value"]],
-        on="_date", direction="backward",
-    )
-    price_df["fng_value"] = price_df["fng_value"].fillna(50)
-    price_df.drop(columns="_date", inplace=True)
-
-    funding_sorted = funding.sort_values("timestamp_utc")
-    price_df = pd.merge_asof(
-        price_df.sort_values("timestamp_utc"),
-        funding_sorted[["timestamp_utc", "funding_rate"]],
-        on="timestamp_utc", direction="backward",
-    )
-    price_df["funding_rate"] = price_df["funding_rate"].fillna(0)
-
     regime_by_hour = price_df.set_index("timestamp_utc")["regime"]
     whale["regime"] = whale["hour_utc"].map(regime_by_hour)
-    whale = whale.merge(
-        price_series.rename("price_t0"), left_on="hour_utc", right_index=True, how="left",
-    )
-    for h, label in all_horizons.items():
-        fut_hour = whale["hour_utc"] + pd.Timedelta(hours=h)
-        fut_price = fut_hour.map(price_series)
-        whale[f"fwd_{label}"] = (fut_price - whale["price_t0"]) / whale["price_t0"]
-
-    whale["_date"] = whale["timestamp_utc"].dt.floor("D")
-    whale = pd.merge_asof(
-        whale.sort_values("_date"), fng_m[["_date", "fng_value"]],
-        on="_date", direction="backward",
-    )
-    whale["fng_value"] = whale["fng_value"].fillna(50)
-    whale.drop(columns="_date", inplace=True)
-    whale = pd.merge_asof(
-        whale.sort_values("hour_utc"),
-        funding_sorted[["timestamp_utc", "funding_rate"]].rename(columns={"timestamp_utc": "hour_utc"}),
-        on="hour_utc", direction="backward",
-    )
-    whale["funding_rate"] = whale["funding_rate"].fillna(0)
 
     return whale, price_df
 
@@ -183,7 +120,7 @@ def run_test(whale: pd.DataFrame, price_df: pd.DataFrame) -> pd.DataFrame:
         withdrawals = sized[sized["tx_category"] == "exchange_withdrawal"]
 
         for label in HORIZON_LABELS:
-            col = f"fwd_{label}"
+            col = forward_return_column(HORIZON_HOURS[label])
             for regime in ["bull", "bear"]:
                 base_returns = price_df[price_df["regime"] == regime][col].dropna()
 
@@ -233,7 +170,7 @@ def run_sentiment_conditioned_test(whale: pd.DataFrame, price_df: pd.DataFrame) 
     rows = []
     for cond_name, (whale_mask_fn, price_mask_fn) in conditions.items():
         for label in SENTIMENT_HORIZON_LABELS:
-            col = f"fwd_{label}"
+            col = forward_return_column(SENTIMENT_HORIZON_HOURS[label])
             for regime in ["bull", "bear"]:
                 base_pool = price_df[(price_df["regime"] == regime) & price_mask_fn(price_df)][col].dropna()
 

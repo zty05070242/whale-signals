@@ -473,3 +473,20 @@ whale_signals/
 │   └── sentiment/                   # VADER scoring and aggregation
 └── tests/                            # transformation and pipeline tests
 ```
+
+### Short code-review path
+
+The core research can be reviewed without reading every acquisition,
+dashboard, or prototype module:
+
+1. [`src/analysis/panel.py`](src/analysis/panel.py) constructs the aligned
+   whale-event and hourly-market panels. It owns timestamp normalisation,
+   forward returns, and backward-looking sentiment joins.
+2. [`src/analysis/event_study.py`](src/analysis/event_study.py) measures hit
+   rates, market base rates, and yearly stability.
+3. [`tests/test_analysis_panel.py`](tests/test_analysis_panel.py) and
+   [`tests/test_event_study.py`](tests/test_event_study.py) demonstrate the
+   alignment and directional rules on small, inspectable examples.
+4. [`scripts/run_research.py`](scripts/run_research.py) is the concise
+   end-to-end entry point. The dashboard-data builder consumes the same panel
+   rather than maintaining a second implementation of the calculations.

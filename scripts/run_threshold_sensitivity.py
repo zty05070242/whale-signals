@@ -19,10 +19,13 @@ import numpy as np  # noqa: E402
 from scipy import stats  # noqa: E402
 
 import config  # noqa: E402
-from src.features.feature_engineer import assign_transaction_label  # noqa: E402
+from src.analysis.panel import (  # noqa: E402
+    build_analysis_panel,
+    forward_return_column,
+)
 from src.analysis.event_study import (  # noqa: E402
-    compute_event_returns,
     compute_base_rate,
+    HORIZONS,
 )
 
 # ---------------------------------------------------------------------------
@@ -31,66 +34,21 @@ from src.analysis.event_study import (  # noqa: E402
 
 print("Loading data...")
 whale = pd.read_csv(config.PROCESSED_DATA_DIR / "whale_txs.csv")
-whale = assign_transaction_label(whale)
 prices = pd.read_csv(config.PROCESSED_DATA_DIR / "eth_prices_hourly.csv")
 funding = pd.read_csv(config.PROCESSED_DATA_DIR / "eth_funding_rate.csv")
 fng = pd.read_csv(config.PROCESSED_DATA_DIR / "fear_greed_daily.csv")
 
 print("Computing forward returns...")
-events = compute_event_returns(whale, prices)
-events["timestamp_utc"] = pd.to_datetime(events["timestamp_utc"], utc=True)
-events["year"] = events["timestamp_utc"].dt.year
-
-# Merge funding rate
-funding_m = funding.copy()
-funding_m["timestamp_utc"] = pd.to_datetime(
-    funding_m["timestamp_utc"], utc=True, format="ISO8601"
+events, price_full = build_analysis_panel(
+    whale,
+    prices,
+    fng,
+    funding,
+    HORIZONS,
 )
-funding_m = funding_m.sort_values("timestamp_utc")
-events = pd.merge_asof(
-    events.sort_values("hour_utc"),
-    funding_m[["timestamp_utc", "funding_rate"]].rename(
-        columns={"timestamp_utc": "hour_utc"}
-    ),
-    on="hour_utc",
-    direction="backward",
-)
-events["funding_rate"] = events["funding_rate"].fillna(0.0)
-
-# Merge Fear & Greed
-fng_m = fng.copy()
-fng_m["date"] = pd.to_datetime(fng_m["date"], utc=True)
-events["_date"] = events["timestamp_utc"].dt.floor("D")
-fng_r = fng_m.rename(columns={"date": "_date"}).sort_values("_date")
-events = pd.merge_asof(
-    events.sort_values("_date"),
-    fng_r[["_date", "fng_value"]],
-    on="_date",
-    direction="backward",
-)
-events.drop(columns="_date", inplace=True)
-events["fng_value"] = events["fng_value"].fillna(50)
-
-# Prepare price data with sentiment for base rates
-price_full = prices.copy()
-price_full["timestamp_utc"] = pd.to_datetime(
-    price_full["timestamp_utc"], utc=True
-)
-price_full = price_full.sort_values("timestamp_utc").reset_index(drop=True)
-price_full = pd.merge_asof(
-    price_full, funding_m[["timestamp_utc", "funding_rate"]],
-    on="timestamp_utc", direction="backward",
-)
-price_full["funding_rate"] = price_full["funding_rate"].fillna(0.0)
-price_full["_date"] = price_full["timestamp_utc"].dt.floor("D")
-price_full = pd.merge_asof(
-    price_full.sort_values("_date"),
-    fng_r[["_date", "fng_value"]],
-    on="_date", direction="backward",
-)
-price_full.drop(columns="_date", inplace=True)
-price_full["fng_value"] = price_full["fng_value"].fillna(50)
-price_full["year"] = price_full["timestamp_utc"].dt.year
+events = events.dropna(
+    subset=[forward_return_column(horizon) for horizon in HORIZONS]
+).reset_index(drop=True)  # retain the script's established complete-case sample
 
 # ---------------------------------------------------------------------------
 # 2. Run threshold sensitivity
@@ -152,7 +110,7 @@ for sig in signals:
             if len(subset) < 30:
                 continue
 
-            col = f"fwd_return_{HORIZON}h"
+            col = forward_return_column(HORIZON)
             returns = subset[col].dropna().values
             if len(returns) < 30:
                 continue

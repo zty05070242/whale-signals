@@ -27,7 +27,11 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-import config
+from src.analysis.panel import add_event_forward_returns
+from src.analysis.reporting import (
+    print_conditioned_hit_rates,
+    print_hit_rate_results,
+)
 
 
 # Prediction horizons to measure (in hours)
@@ -53,38 +57,12 @@ def compute_event_returns(
     pd.DataFrame
         whale_df with fwd_return_Xh columns (percentage return after event).
     """
-    whale = whale_df.copy()
-    whale["timestamp_utc"] = pd.to_datetime(whale["timestamp_utc"], utc=True)
-
-    price = price_df.copy()
-    price["timestamp_utc"] = pd.to_datetime(price["timestamp_utc"], utc=True)
-    price = price.sort_values("timestamp_utc").reset_index(drop=True)
-
-    # Floor whale timestamps to the hour for price lookup
-    whale["hour_utc"] = whale["timestamp_utc"].dt.floor("h")
-
-    # Vectorised: merge current-hour price, then future-hour prices
-    price_series = price.set_index("timestamp_utc")["close"]
-
-    # Current price at event hour
-    whale = whale.merge(
-        price_series.rename("price_t0"),
-        left_on="hour_utc", right_index=True, how="left",
+    return add_event_forward_returns(
+        whale_df,
+        price_df,
+        HORIZONS,
+        drop_incomplete=True,
     )
-
-    for h in HORIZONS:
-        col = f"fwd_return_{h}h"
-        future_hour = whale["hour_utc"] + pd.Timedelta(hours=h)
-        future_price = future_hour.map(price_series)
-        whale[col] = (future_price - whale["price_t0"]) / whale["price_t0"]
-
-    whale.drop(columns="price_t0", inplace=True)
-
-    # Drop rows where any return is NaN
-    return_cols = [f"fwd_return_{h}h" for h in HORIZONS]
-    whale = whale.dropna(subset=return_cols).reset_index(drop=True)
-
-    return whale
 
 
 def compute_hit_rates(events_df: pd.DataFrame) -> dict:
@@ -280,88 +258,6 @@ def compute_conditioned_hit_rates(
                 }
 
     return results
-
-
-def print_hit_rate_results(results: dict) -> None:
-    """Print hit rate results."""
-    print(f"\n{'='*80}")
-    print("WHALE SMART MONEY TEST: Hit Rates")
-    print("(Hit = whale's action correctly predicted price direction)")
-    print("(50% = random, >50% = smart money, <50% = dumb money)")
-    print(f"{'='*80}")
-
-    for cat, horizons in results.items():
-        if not horizons:
-            continue
-
-        direction = horizons[HORIZONS[0]]["expected_direction"]
-        action = "sold before drop" if direction == "down" else "bought before rise"
-
-        print(f"\n  {cat.upper().replace('_', ' ')}  (hit = {action})")
-        print(f"  {'Horizon':>8}  {'N':>8}  {'Hits':>8}  {'Hit Rate':>9}  "
-              f"{'p-value':>8}  {'Sig':>5}  {'Verdict':>12}")
-
-        for h, s in sorted(horizons.items()):
-            sig = ""
-            if s["pvalue"] < 0.001:
-                sig = "***"
-            elif s["pvalue"] < 0.01:
-                sig = "**"
-            elif s["pvalue"] < 0.05:
-                sig = "*"
-
-            if s["hit_rate"] > 0.50 and s["pvalue"] < 0.05:
-                verdict = "SMART"
-            elif s["hit_rate"] < 0.50 and s["pvalue"] < 0.05:
-                verdict = "WRONG"
-            else:
-                verdict = "random"
-
-            print(f"  {h:>6}h  {s['n']:>8,}  {s['hits']:>8,}  "
-                  f"{s['hit_rate']:>8.1%}  "
-                  f"{s['pvalue']:>8.4f}  "
-                  f"{sig:>5}  "
-                  f"{verdict:>12}")
-
-
-def print_conditioned_hit_rates(results: dict) -> None:
-    """Print sentiment-conditioned hit rate results."""
-    print(f"\n{'='*80}")
-    print("CONDITIONED HIT RATES: Are Whales Smarter in Certain Sentiment Regimes?")
-    print(f"{'='*80}")
-
-    for cat, conditions in results.items():
-        if not conditions:
-            continue
-
-        print(f"\n  {cat.upper().replace('_', ' ')}")
-
-        for cond_name, horizons in sorted(conditions.items()):
-            print(f"\n    {cond_name}")
-            print(f"    {'Horizon':>8}  {'N':>8}  {'Hit Rate':>9}  "
-                  f"{'p-value':>8}  {'Sig':>5}  {'Verdict':>12}")
-
-            for h, s in sorted(horizons.items()):
-                sig = ""
-                if s["pvalue"] < 0.001:
-                    sig = "***"
-                elif s["pvalue"] < 0.01:
-                    sig = "**"
-                elif s["pvalue"] < 0.05:
-                    sig = "*"
-
-                if s["hit_rate"] > 0.50 and s["pvalue"] < 0.05:
-                    verdict = "SMART"
-                elif s["hit_rate"] < 0.50 and s["pvalue"] < 0.05:
-                    verdict = "WRONG"
-                else:
-                    verdict = "random"
-
-                print(f"    {h:>6}h  {s['n']:>8,}  "
-                      f"{s['hit_rate']:>8.1%}  "
-                      f"{s['pvalue']:>8.4f}  "
-                      f"{sig:>5}  "
-                      f"{verdict:>12}")
 
 
 def compute_base_rate(

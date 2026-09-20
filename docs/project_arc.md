@@ -200,6 +200,32 @@ name but GitHub's redirect keeps `git push` working.
 
 Update this section at the end of each working session.
 
+**2026-09-18**
+- Refactored the research path around one canonical analysis panel in
+  `src/analysis/panel.py`. Timestamp normalisation, event and market forward
+  returns, transaction labels, and backward-looking Fear & Greed/funding joins
+  now have one implementation.
+- Preserved the public `compute_event_returns()` interface while routing it
+  through the shared panel logic. The dashboard builder, threshold sensitivity
+  analysis, and bull/bear analysis now consume the same return-column contract.
+- Moved the 20% bull/bear state machine from an executable script into
+  `src/analysis/regimes.py`, so presentation code no longer imports research
+  behaviour from `scripts/`.
+- Moved terminal-only table formatting into `src/analysis/reporting.py`; the
+  event-study module retains compatibility imports but now focuses on research
+  calculations.
+- Added `scripts/run_research.py` as the concise core path from processed inputs
+  through unconditional, sentiment-conditioned, and yearly walk-forward
+  results. Added a short reviewer route to the README.
+- Added focused tests for exact calendar-hour returns, per-horizon missingness,
+  the legacy complete-case boundary, backward-only sentiment joins, deposit vs
+  withdrawal direction, base rates, and bull/bear transitions.
+- Verification: 114 tests passed and 10 provider-dependent tests were skipped;
+  Python compilation and whitespace checks passed. The raw analysed snapshot is
+  not committed, so the full dashboard JSON could not be regenerated for a
+  byte-for-byte comparison; its public key structure and aggregation logic were
+  left unchanged.
+
 **2026-09-15**
 - Reframed the English README around its strongest supported result: labelled
   exchange deposits show a +1.33 percentage-point downside edge at 24 hours.

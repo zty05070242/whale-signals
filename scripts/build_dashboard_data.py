@@ -22,12 +22,11 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
 import config  # noqa: E402
-from src.features.feature_engineer import assign_transaction_label  # noqa: E402
-
-# Reuse the exact bull/bear state machine from the analysis script, so the
-# dashboard's regime classification can never drift from README Section 9's.
-sys.path.insert(0, str(ROOT / "scripts"))
-from run_bull_bear_analysis import compute_regime  # noqa: E402
+from src.analysis.panel import (  # noqa: E402
+    build_analysis_panel,
+    forward_return_column,
+)
+from src.analysis.regimes import compute_regime  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Parameters (kept identical to the dashboard so numbers match exactly)
@@ -35,6 +34,7 @@ from run_bull_bear_analysis import compute_regime  # noqa: E402
 
 HORIZONS_H = [1, 6, 24, 72, 168, 720, 2160, 4320]
 HORIZON_LABELS = ["1h", "6h", "24h", "3d", "1w", "1m", "3m", "6m"]
+HORIZON_HOURS = dict(zip(HORIZON_LABELS, HORIZONS_H))
 
 # Slider values: $1M to $50M in $1M steps (matches the dashboard slider).
 THRESHOLDS = list(range(1_000_000, 50_000_001, 1_000_000))
@@ -60,73 +60,14 @@ MIN_N = 30  # minimum sample size before a hit rate is trustworthy
 # Load and enrich (this is the slow, memory-heavy part done once)
 # ---------------------------------------------------------------------------
 
-def load_enriched():
+def load_enriched() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Load raw data and attach forward returns + sentiment to whales and prices."""
     print("Loading raw data...")
     whale = pd.read_csv(config.PROCESSED_DATA_DIR / "whale_txs.csv")
     prices = pd.read_csv(config.PROCESSED_DATA_DIR / "eth_prices_hourly.csv")
     funding = pd.read_csv(config.PROCESSED_DATA_DIR / "eth_funding_rate.csv")
     fng = pd.read_csv(config.PROCESSED_DATA_DIR / "fear_greed_daily.csv")
-
-    whale["timestamp_utc"] = pd.to_datetime(whale["timestamp_utc"], utc=True)
-    prices["timestamp_utc"] = pd.to_datetime(prices["timestamp_utc"], utc=True)
-    funding["timestamp_utc"] = pd.to_datetime(
-        funding["timestamp_utc"], utc=True, format="ISO8601"
-    )
-    fng["date"] = pd.to_datetime(fng["date"], utc=True)
-
-    whale = assign_transaction_label(whale)
-    whale["hour_utc"] = whale["timestamp_utc"].dt.floor("h")
-    whale["year"] = whale["timestamp_utc"].dt.year
-
-    prices_sorted = prices.sort_values("timestamp_utc").reset_index(drop=True)
-    price_series = prices_sorted.set_index("timestamp_utc")["close"]
-
-    # Entry price + forward returns for every whale (vectorised .map lookups)
-    whale = whale.merge(
-        price_series.rename("price_t0"),
-        left_on="hour_utc", right_index=True, how="left",
-    )
-    for h, label in zip(HORIZONS_H, HORIZON_LABELS):
-        fut = (whale["hour_utc"] + pd.Timedelta(hours=h)).map(price_series)
-        whale[f"fwd_{label}"] = (fut - whale["price_t0"]) / whale["price_t0"]
-
-    # Same forward returns for every hourly candle (the base-rate universe)
-    for h, label in zip(HORIZONS_H, HORIZON_LABELS):
-        fut = (prices_sorted["timestamp_utc"] + pd.Timedelta(hours=h)).map(price_series)
-        prices_sorted[f"fwd_{label}"] = (fut - prices_sorted["close"]) / prices_sorted["close"]
-
-    # Attach funding rate (last 8h value before the event)
-    funding_sorted = funding.sort_values("timestamp_utc")
-    whale = pd.merge_asof(
-        whale.sort_values("hour_utc"),
-        funding_sorted[["timestamp_utc", "funding_rate"]].rename(
-            columns={"timestamp_utc": "hour_utc"}),
-        on="hour_utc", direction="backward",
-    )
-    whale["funding_rate"] = whale["funding_rate"].fillna(0)
-    prices_sorted = pd.merge_asof(
-        prices_sorted.sort_values("timestamp_utc"),
-        funding_sorted[["timestamp_utc", "funding_rate"]],
-        on="timestamp_utc", direction="backward",
-    )
-    prices_sorted["funding_rate"] = prices_sorted["funding_rate"].fillna(0)
-
-    # Attach Fear & Greed (last daily value before the event)
-    fng_m = fng.rename(columns={"date": "_date"}).sort_values("_date")
-    whale["_date"] = whale["timestamp_utc"].dt.floor("D")
-    whale = pd.merge_asof(whale.sort_values("_date"),
-                          fng_m[["_date", "fng_value"]], on="_date", direction="backward")
-    whale["fng_value"] = whale["fng_value"].fillna(50)
-    whale.drop(columns="_date", inplace=True)
-    prices_sorted["_date"] = prices_sorted["timestamp_utc"].dt.floor("D")
-    prices_sorted = pd.merge_asof(prices_sorted.sort_values("_date"),
-                                  fng_m[["_date", "fng_value"]], on="_date", direction="backward")
-    prices_sorted["fng_value"] = prices_sorted["fng_value"].fillna(50)
-    prices_sorted.drop(columns="_date", inplace=True)
-    prices_sorted["year"] = prices_sorted["timestamp_utc"].dt.year
-
-    return whale, prices_sorted
+    return build_analysis_panel(whale, prices, fng, funding, HORIZONS_H)
 
 
 # ---------------------------------------------------------------------------
@@ -204,11 +145,12 @@ def build_base_rates(all_prices: pd.DataFrame, years: list[int]) -> dict:
 
     # Base rate of a price fall at each horizon (section 1)
     for label in HORIZON_LABELS:
-        base["horizon_down"][label] = hit_pct(all_prices[f"fwd_{label}"], "down")
+        column = forward_return_column(HORIZON_HOURS[label])
+        base["horizon_down"][label] = hit_pct(all_prices[column], "down")
 
     # Per-year, per-horizon base rates, both directions (sections 2, 6)
     for label in HORIZON_LABELS:
-        col = f"fwd_{label}"
+        col = forward_return_column(HORIZON_HOURS[label])
         base["yearly_down"][label] = {}
         base["yearly_up"][label] = {}
         base["yearly_up_negfund"][label] = {}
@@ -222,17 +164,19 @@ def build_base_rates(all_prices: pd.DataFrame, years: list[int]) -> dict:
 
     # Per-sentiment base rates at 24h only, both directions (section 4)
     for name, fn in CONDITIONS.items():
-        sub = all_prices[fn(all_prices)]["fwd_24h"]
+        sub = all_prices[fn(all_prices)][forward_return_column(24)]
         base["sentiment_down"][name] = hit_pct(sub, "down")
         base["sentiment_up"][name] = hit_pct(sub, "up")
 
     # Conditioned base rates for threshold sensitivity, at every horizon (section 3)
     for label in HORIZON_LABELS:
-        col = f"fwd_{label}"
+        col = forward_return_column(HORIZON_HOURS[label])
         base["greed_down"][label] = hit_pct(all_prices[all_prices["fng_value"] > 75][col], "down")
         base["negfund_up"][label] = hit_pct(all_prices[all_prices["funding_rate"] < 0][col], "up")
 
-    base["all_down_24h"] = hit_pct(all_prices["fwd_24h"], "down")
+    base["all_down_24h"] = hit_pct(
+        all_prices[forward_return_column(24)], "down"
+    )
     return base
 
 
@@ -251,21 +195,29 @@ def build_for_threshold(whale: pd.DataFrame, base: dict, years: list[int]) -> di
                                 whale["tx_category"].value_counts().items()}
 
     # Key metrics
-    dep_hit_24h = hit_pct(deposits["fwd_24h"], "down")
-    greed_dep_hit = hit_pct(deposits[deposits["fng_value"] > 75]["fwd_24h"], "down")
+    return_24h = forward_return_column(24)
+    dep_hit_24h = hit_pct(deposits[return_24h], "down")
+    greed_dep_hit = hit_pct(
+        deposits[deposits["fng_value"] > 75][return_24h], "down"
+    )
     block["deposit_hit_24h"] = r2(dep_hit_24h)
     block["greed_deposit_hit_24h"] = r2(greed_dep_hit)
 
     # Section 1: deposit edge by horizon (whale hit - base rate)
     block["deposit_edge_by_horizon"] = [
-        r2(hit_pct(deposits[f"fwd_{label}"], "down") - base["horizon_down"][label])
+        r2(
+            hit_pct(
+                deposits[forward_return_column(HORIZON_HOURS[label])], "down"
+            )
+            - base["horizon_down"][label]
+        )
         for label in HORIZON_LABELS
     ]
 
     # Section 2 + 6: yearly edges, at every horizon (horizon-selectable)
     block["yearly"] = {}
     for label in HORIZON_LABELS:
-        col = f"fwd_{label}"
+        col = forward_return_column(HORIZON_HOURS[label])
         dep_edge, wd_edge_neg, wd_edge_uncond = {}, {}, {}
         for year in years:
             y = str(year)
@@ -295,7 +247,7 @@ def build_for_threshold(whale: pd.DataFrame, base: dict, years: list[int]) -> di
     def sentiment(source, direction, base_key):
         rows = []
         for name, fn in CONDITIONS.items():
-            sub = source[fn(source)]["fwd_24h"]
+            sub = source[fn(source)][return_24h]
             if sub.notna().sum() < MIN_N:
                 continue
             rows.append({"name": name, "hit": r2(hit_pct(sub, direction)),
@@ -311,7 +263,7 @@ def build_for_threshold(whale: pd.DataFrame, base: dict, years: list[int]) -> di
     # dashboard can offer a condition selector (deposits are a sell signal, so
     # direction is always "down": a hit means price fell).
     block["return_dist_by_condition"] = {
-        name: return_distribution(deposits[fn(deposits)]["fwd_24h"], "down")
+        name: return_distribution(deposits[fn(deposits)][return_24h], "down")
         for name, fn in DIST_CONDITIONS.items()
     }
 
@@ -329,7 +281,7 @@ def build_threshold_sensitivity(whale: pd.DataFrame, base: dict) -> dict:
 
     result = {}
     for label in HORIZON_LABELS:
-        col = f"fwd_{label}"
+        col = forward_return_column(HORIZON_HOURS[label])
         dep_greed, wd_neg = [], []
         for thresh in SENS_THRESHOLDS:
             d = deposits[(deposits["usd_value"] >= thresh)
@@ -383,7 +335,10 @@ def build_bull_bear(whale: pd.DataFrame, all_prices: pd.DataFrame) -> dict:
     # Base-rate forward returns on the filled grid (shift(-h) = h hours ahead)
     for label, h in BB_HORIZONS.items():
         fut = ps.shift(-h)
-        price_df[f"fwd_{label}"] = (fut.values - price_df["close"].values) / price_df["close"].values
+        column = forward_return_column(h)
+        price_df[column] = (
+            fut.values - price_df["close"].values
+        ) / price_df["close"].values
 
     regime_by_hour = price_df.set_index("timestamp_utc")["regime"]
     wh = whale.copy()
@@ -392,8 +347,8 @@ def build_bull_bear(whale: pd.DataFrame, all_prices: pd.DataFrame) -> dict:
     edges = []
     for thresh in SENS_THRESHOLDS:
         sized = wh[wh["usd_value"] >= thresh]
-        for label in BB_HORIZONS:
-            col = f"fwd_{label}"
+        for label, horizon in BB_HORIZONS.items():
+            col = forward_return_column(horizon)
             for reg in ("bull", "bear"):
                 base_pool = price_df.loc[price_df["regime"] == reg, col].dropna()
                 for cat, tx_cat, direction in (
@@ -485,16 +440,17 @@ def build_timeline(whale: pd.DataFrame, all_prices: pd.DataFrame) -> dict:
 
     months = sorted(price_month.unique())
     out = {"months": months, "n": [], "hit_24h": [], "base_24h": [], "eth_close": []}
+    return_24h = forward_return_column(24)
     for m in months:
         d = deposits[dep_month == m]
         a = all_prices[price_month == m]
         out["n"].append(int(len(d)))
         # Only report a monthly hit rate when the month has enough signals.
         out["hit_24h"].append(
-            r2(hit_pct(d["fwd_24h"], "down"))
-            if d["fwd_24h"].notna().sum() >= MIN_N else None
+            r2(hit_pct(d[return_24h], "down"))
+            if d[return_24h].notna().sum() >= MIN_N else None
         )
-        out["base_24h"].append(r2(hit_pct(a["fwd_24h"], "down")))
+        out["base_24h"].append(r2(hit_pct(a[return_24h], "down")))
         out["eth_close"].append(
             r2(a.sort_values("timestamp_utc")["close"].iloc[-1])
         )
